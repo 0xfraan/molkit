@@ -155,7 +155,7 @@ class ColorsSection(QtWidgets.QWidget):
             b = color.blueF()
             target = self._get_target()
             try:
-                self.cmd.set_color("matimac_custom", [r, g, b])
-                self.cmd.color("matimac_custom", target)
+                self.cmd.set_color("molkit_custom", [r, g, b])
+                self.cmd.color("molkit_custom", target)
             except Exception as e:
                 print(f"Color error: {e}")

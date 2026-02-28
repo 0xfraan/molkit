@@ -649,7 +649,7 @@ class _FetchWorker(QtCore.QThread):
         try:
             self.result = fetch_entry_metadata(self.pdb_id)
         except Exception as e:
-            print(f"[MatiMac] Inspector fetch error: {e}")
+            print(f"[MolKit] Inspector fetch error: {e}")
             self.result = None
         self.fetch_done.emit()
 
@@ -660,7 +660,7 @@ class InspectorDock(QtWidgets.QDockWidget):
     def __init__(self, cmd, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Inspector")
-        self.setObjectName("matimac_inspector")
+        self.setObjectName("molkit_inspector")
         self.inspector = InspectorWidget(cmd, self)
         self.setWidget(self.inspector)
         self.setFeatures(

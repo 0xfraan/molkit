@@ -60,7 +60,7 @@ class CollapsibleSection(QtWidgets.QWidget):
         self.content_layout.addLayout(layout)
 
 
-class MatiMacSidebarWidget(QtWidgets.QWidget):
+class MolKitSidebarWidget(QtWidgets.QWidget):
     """Main sidebar widget with collapsible sections."""
 
     def __init__(self, parent=None, window=None):
@@ -172,8 +172,8 @@ class MatiMacSidebarWidget(QtWidgets.QWidget):
         # Connect tab change -> inspector (also fires on first load via add_tab)
         def _on_tab_for_inspector(name):
             window = self.window
-            if hasattr(window, '_matimac_inspector'):
-                window._matimac_inspector.inspector.load_entry(name)
+            if hasattr(window, '_molkit_inspector'):
+                window._molkit_inspector.inspector.load_entry(name)
 
         self.tab_bar.tab_changed.connect(_on_tab_for_inspector)
 
@@ -205,22 +205,22 @@ class MatiMacSidebarWidget(QtWidgets.QWidget):
 
     def _toggle_inspector(self):
         """Toggle the inspector panel visibility."""
-        if hasattr(self.window, '_matimac_inspector'):
-            insp = self.window._matimac_inspector
+        if hasattr(self.window, '_molkit_inspector'):
+            insp = self.window._molkit_inspector
             if insp.isVisible():
                 insp.hide()
             else:
                 insp.show()
 
 
-class MatiMacSidebar(QtWidgets.QDockWidget):
+class MolKitSidebar(QtWidgets.QDockWidget):
     """Dockable sidebar wrapper."""
 
     def __init__(self, window, parent=None):
         super().__init__(parent or window)
-        self.setWindowTitle("MatiMac")
-        self.setObjectName("matimac_sidebar")
-        self.widget_inner = MatiMacSidebarWidget(self, window=window)
+        self.setWindowTitle("MolKit")
+        self.setObjectName("molkit_sidebar")
+        self.widget_inner = MolKitSidebarWidget(self, window=window)
         self.setWidget(self.widget_inner)
         self.setFeatures(
             QtWidgets.QDockWidget.DockWidgetFeature.DockWidgetMovable

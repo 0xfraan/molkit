@@ -3,7 +3,7 @@ from pymol import cgo
 
 Qt = QtCore.Qt
 
-GRID_OBJ_NAME = "_matimac_grid"
+GRID_OBJ_NAME = "_molkit_grid"
 GRID_RANGE = 50  # half-extent in angstroms
 GRID_SPACING = 5  # spacing between grid points/lines
 
