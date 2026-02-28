@@ -1,4 +1,4 @@
-# MatiMac UI Design — PyMOL Friendly Interface
+# MolKit UI Design — PyMOL Friendly Interface
 
 ## Cel
 Plugin PySide6/Qt do PyMOL open-source, ktory zamienia PyMOL w przyjazne narzedzie dla poczatkujacych. Zero CLI na widoku — wszystko przez graficzny interfejs.

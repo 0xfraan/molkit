@@ -4,15 +4,15 @@
 
 **Goal:** Add PDB text search with results, model tabs for switching between loaded structures, and a rich molecule inspector panel on the right that shows publications, domains, chains, ligands, binding sites — all clickable.
 
-**Architecture:** Three independent features built as modules within the existing MatiMac plugin (`pymol-open-source/data/startup/matimac/`). The RCSB client module handles all API calls (Search API for text search, GraphQL for metadata). Tabs are a QTabBar widget wired into the sidebar. Inspector is a new QDockWidget on the right side. All features use `pymol.cmd` for viewport interaction.
+**Architecture:** Three independent features built as modules within the existing MolKit plugin (`pymol-open-source/data/startup/molkit/`). The RCSB client module handles all API calls (Search API for text search, GraphQL for metadata). Tabs are a QTabBar widget wired into the sidebar. Inspector is a new QDockWidget on the right side. All features use `pymol.cmd` for viewport interaction.
 
 **Tech Stack:** Python 3.9+, PySide6 (via `pymol.Qt`), `urllib.request` for HTTP (no external deps), RCSB Search API + GraphQL Data API
 
 **Key existing files:**
-- Plugin entry: `pymol-open-source/data/startup/matimac/__init__.py`
-- Sidebar: `pymol-open-source/data/startup/matimac/sidebar.py`
-- Loader: `pymol-open-source/data/startup/matimac/sections/loader.py`
-- Structure manager: `pymol-open-source/data/startup/matimac/sections/structure.py`
+- Plugin entry: `pymol-open-source/data/startup/molkit/__init__.py`
+- Sidebar: `pymol-open-source/data/startup/molkit/sidebar.py`
+- Loader: `pymol-open-source/data/startup/molkit/sections/loader.py`
+- Structure manager: `pymol-open-source/data/startup/molkit/sections/structure.py`
 - CollapsibleSection widget: defined in `sidebar.py`
 
 ---
@@ -20,11 +20,11 @@
 ### Task 1: RCSB API Client Module
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/rcsb_client.py`
+- Create: `pymol-open-source/data/startup/molkit/rcsb_client.py`
 
 **Step 1: Write the RCSB client**
 
-Create `pymol-open-source/data/startup/matimac/rcsb_client.py`:
+Create `pymol-open-source/data/startup/molkit/rcsb_client.py`:
 
 ```python
 """
@@ -223,7 +223,7 @@ def parse_entry_summary(entry: dict) -> dict:
 ```bash
 cd pymol-open-source && python -c "
 import sys; sys.path.insert(0, 'data/startup')
-from matimac.rcsb_client import search_pdb, fetch_batch_metadata, fetch_entry_metadata, parse_entry_summary
+from molkit.rcsb_client import search_pdb, fetch_batch_metadata, fetch_entry_metadata, parse_entry_summary
 
 # Test search
 ids = search_pdb('hemoglobin')
@@ -245,7 +245,7 @@ print(f'Citations: {len(full.get(\"citation\", []))}')
 **Step 3: Commit**
 
 ```bash
-git add data/startup/matimac/rcsb_client.py
+git add data/startup/molkit/rcsb_client.py
 git commit -m "feat: RCSB API client for search and metadata"
 ```
 
@@ -254,11 +254,11 @@ git commit -m "feat: RCSB API client for search and metadata"
 ### Task 2: PDB Search in Loader
 
 **Files:**
-- Modify: `pymol-open-source/data/startup/matimac/sections/loader.py`
+- Modify: `pymol-open-source/data/startup/molkit/sections/loader.py`
 
 **Step 1: Rewrite loader with search**
 
-Replace the contents of `pymol-open-source/data/startup/matimac/sections/loader.py` with the version below. Key changes:
+Replace the contents of `pymol-open-source/data/startup/molkit/sections/loader.py` with the version below. Key changes:
 - Input field accepts both 4-char codes AND text queries
 - No maxLength restriction
 - Debounce timer (500ms) triggers search when text >= 3 chars
@@ -293,7 +293,7 @@ class SearchWorker(QtCore.QThread):
         self.query = query
 
     def run(self):
-        from matimac.rcsb_client import search_pdb, fetch_batch_metadata, parse_entry_summary
+        from molkit.rcsb_client import search_pdb, fetch_batch_metadata, parse_entry_summary
         ids = search_pdb(self.query, max_results=8)
         if not ids:
             self.results_ready.emit([])
@@ -582,7 +582,7 @@ class LoaderSection(QtWidgets.QWidget):
 
 ```bash
 cd pymol-open-source && python -m pymol
-# In MatiMac:
+# In MolKit:
 # Type "hemoglobin" → wait 500ms → search results appear as cards
 # Type "1ATP" → Enter → immediate fetch
 # Click "Load" on a search result → loads that structure
@@ -592,7 +592,7 @@ cd pymol-open-source && python -m pymol
 **Step 3: Commit**
 
 ```bash
-git add data/startup/matimac/sections/loader.py
+git add data/startup/molkit/sections/loader.py
 git commit -m "feat: PDB text search with result cards and debounce"
 ```
 
@@ -601,13 +601,13 @@ git commit -m "feat: PDB text search with result cards and debounce"
 ### Task 3: Model Tabs (QTabBar)
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/tabs.py`
-- Modify: `pymol-open-source/data/startup/matimac/sidebar.py`
-- Modify: `pymol-open-source/data/startup/matimac/__init__.py`
+- Create: `pymol-open-source/data/startup/molkit/tabs.py`
+- Modify: `pymol-open-source/data/startup/molkit/sidebar.py`
+- Modify: `pymol-open-source/data/startup/molkit/__init__.py`
 
 **Step 1: Write tabs widget**
 
-Create `pymol-open-source/data/startup/matimac/tabs.py`:
+Create `pymol-open-source/data/startup/molkit/tabs.py`:
 
 ```python
 from pymol.Qt import QtWidgets, QtCore
@@ -760,12 +760,12 @@ class ModelTabBar(QtWidgets.QWidget):
 
 **Step 2: Wire tabs into sidebar and __init__**
 
-Modify `pymol-open-source/data/startup/matimac/sidebar.py`:
+Modify `pymol-open-source/data/startup/molkit/sidebar.py`:
 
-Add the tab bar at the very top of `MatiMacSidebarWidget.__init__`, BEFORE the loader section:
+Add the tab bar at the very top of `MolKitSidebarWidget.__init__`, BEFORE the loader section:
 
 ```python
-# In MatiMacSidebarWidget.__init__, add before the loader:
+# In MolKitSidebarWidget.__init__, add before the loader:
 
 # Model tabs
 from .tabs import ModelTabBar
@@ -798,7 +798,7 @@ self._sync_timer.timeout.connect(self.tab_bar.sync_with_pymol)
 self._sync_timer.start(3000)
 ```
 
-Add this method to `MatiMacSidebarWidget`:
+Add this method to `MolKitSidebarWidget`:
 
 ```python
 def search_input_focus(self):
@@ -823,7 +823,7 @@ cd pymol-open-source && python -m pymol
 **Step 4: Commit**
 
 ```bash
-git add data/startup/matimac/tabs.py data/startup/matimac/sidebar.py
+git add data/startup/molkit/tabs.py data/startup/molkit/sidebar.py
 git commit -m "feat: model tabs with view save/restore and show-all toggle"
 ```
 
@@ -832,13 +832,13 @@ git commit -m "feat: model tabs with view save/restore and show-all toggle"
 ### Task 4: Inspector Panel — Shell + Overview
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/inspector.py`
-- Modify: `pymol-open-source/data/startup/matimac/__init__.py`
-- Modify: `pymol-open-source/data/startup/matimac/sidebar.py`
+- Create: `pymol-open-source/data/startup/molkit/inspector.py`
+- Modify: `pymol-open-source/data/startup/molkit/__init__.py`
+- Modify: `pymol-open-source/data/startup/molkit/sidebar.py`
 
 **Step 1: Write inspector shell with Overview section**
 
-Create `pymol-open-source/data/startup/matimac/inspector.py`:
+Create `pymol-open-source/data/startup/molkit/inspector.py`:
 
 ```python
 import webbrowser
@@ -1467,7 +1467,7 @@ class _FetchWorker(QtCore.QThread):
         self.pdb_id = pdb_id
 
     def run(self):
-        from matimac.rcsb_client import fetch_entry_metadata
+        from molkit.rcsb_client import fetch_entry_metadata
         data = fetch_entry_metadata(self.pdb_id)
         self.data_ready.emit(data)
 
@@ -1478,7 +1478,7 @@ class InspectorDock(QtWidgets.QDockWidget):
     def __init__(self, cmd, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Inspector")
-        self.setObjectName("matimac_inspector")
+        self.setObjectName("molkit_inspector")
         self.inspector = InspectorWidget(cmd, self)
         self.setWidget(self.inspector)
         self.setFeatures(
@@ -1489,28 +1489,28 @@ class InspectorDock(QtWidgets.QDockWidget):
 
 **Step 2: Wire inspector into __init__.py and sidebar**
 
-Modify `pymol-open-source/data/startup/matimac/__init__.py` — in `open_matimac()`, after adding the sidebar, add the inspector on the right:
+Modify `pymol-open-source/data/startup/molkit/__init__.py` — in `open_molkit()`, after adding the sidebar, add the inspector on the right:
 
 ```python
-    if not hasattr(window, '_matimac_inspector'):
+    if not hasattr(window, '_molkit_inspector'):
         from .inspector import InspectorDock
         from pymol import cmd
 
-        window._matimac_inspector = InspectorDock(cmd, window)
+        window._molkit_inspector = InspectorDock(cmd, window)
         window.addDockWidget(
             Qt.DockWidgetArea.RightDockWidgetArea,
-            window._matimac_inspector,
+            window._molkit_inspector,
         )
 ```
 
-Modify `pymol-open-source/data/startup/matimac/sidebar.py` — in `MatiMacSidebarWidget.__init__`, connect loader signal to also update inspector. Add after the `_on_structure_loaded` connection:
+Modify `pymol-open-source/data/startup/molkit/sidebar.py` — in `MolKitSidebarWidget.__init__`, connect loader signal to also update inspector. Add after the `_on_structure_loaded` connection:
 
 ```python
 # Connect loader → inspector
 def _on_structure_for_inspector(name):
     window = self.window
-    if hasattr(window, '_matimac_inspector'):
-        window._matimac_inspector.inspector.load_entry(name)
+    if hasattr(window, '_molkit_inspector'):
+        window._molkit_inspector.inspector.load_entry(name)
 
 self.loader.structure_loaded.connect(_on_structure_for_inspector)
 ```
@@ -1521,8 +1521,8 @@ Also connect tab changes to inspector:
 # Connect tab change → inspector
 def _on_tab_for_inspector(name):
     window = self.window
-    if hasattr(window, '_matimac_inspector'):
-        window._matimac_inspector.inspector.load_entry(name)
+    if hasattr(window, '_molkit_inspector'):
+        window._molkit_inspector.inspector.load_entry(name)
 
 self.tab_bar.tab_changed.connect(_on_tab_for_inspector)
 ```
@@ -1550,7 +1550,7 @@ cd pymol-open-source && python -m pymol
 **Step 4: Commit**
 
 ```bash
-git add data/startup/matimac/inspector.py data/startup/matimac/__init__.py data/startup/matimac/sidebar.py
+git add data/startup/molkit/inspector.py data/startup/molkit/__init__.py data/startup/molkit/sidebar.py
 git commit -m "feat: molecule inspector with publications, chains, domains, ligands, binding sites, GO terms"
 ```
 
@@ -1559,8 +1559,8 @@ git commit -m "feat: molecule inspector with publications, chains, domains, liga
 ### Task 5: Final Wiring & Edge Cases
 
 **Files:**
-- Modify: `pymol-open-source/data/startup/matimac/__init__.py`
-- Modify: `pymol-open-source/data/startup/matimac/sidebar.py`
+- Modify: `pymol-open-source/data/startup/molkit/__init__.py`
+- Modify: `pymol-open-source/data/startup/molkit/sidebar.py`
 
 **Step 1: Handle file-loaded structures (no RCSB data)**
 
@@ -1630,8 +1630,8 @@ self.console_section.add_widget(inspector_btn)
 
 ```python
 def _toggle_inspector(self):
-    if hasattr(self.window, '_matimac_inspector'):
-        insp = self.window._matimac_inspector
+    if hasattr(self.window, '_molkit_inspector'):
+        insp = self.window._molkit_inspector
         if insp.isVisible():
             insp.hide()
         else:
@@ -1658,6 +1658,6 @@ cd pymol-open-source && python -m pymol
 **Step 4: Commit**
 
 ```bash
-git add data/startup/matimac/
+git add data/startup/molkit/
 git commit -m "feat: final wiring — search, tabs, inspector with edge case handling"
 ```

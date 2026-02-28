@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add a vertical toolbar with Select, Brush, Gizmo, and Measure tools for direct 3D viewport interaction in MatiMac.
+**Goal:** Add a vertical toolbar with Select, Brush, Gizmo, and Measure tools for direct 3D viewport interaction in MolKit.
 
 **Architecture:** Qt overlay toolbar positioned over the left edge of the PyMOL GL widget. Each tool is a self-contained class implementing a `BaseTool` interface. A `ToolManager` installs an event filter on the GL widget and routes mouse events to the active tool. Selection visualization uses PyMOL representations (spheres). Gizmo uses PyMOL CGO objects. Brush uses PyMOL `cmd.color()`. Measurements use native PyMOL `cmd.distance()`/`cmd.angle()`/`cmd.dihedral()`.
 
@@ -18,7 +18,7 @@
 
 **File Structure:**
 ```
-pymol-open-source/data/startup/matimac/
+pymol-open-source/data/startup/molkit/
 ├── __init__.py              (modify: add toolbar init)
 ├── sidebar.py               (no changes)
 ├── toolbar.py               (create: toolbar widget + tool manager)
@@ -37,8 +37,8 @@ pymol-open-source/data/startup/matimac/
 ### Task 1: BaseTool abstract class and tools package
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/tools/__init__.py`
-- Create: `pymol-open-source/data/startup/matimac/tools/base.py`
+- Create: `pymol-open-source/data/startup/molkit/tools/__init__.py`
+- Create: `pymol-open-source/data/startup/molkit/tools/base.py`
 
 **Step 1: Create the tools package**
 
@@ -98,14 +98,14 @@ class BaseTool(ABC):
 
 **Step 3: Verify file structure**
 
-Run: `ls pymol-open-source/data/startup/matimac/tools/`
+Run: `ls pymol-open-source/data/startup/molkit/tools/`
 Expected: `__init__.py  base.py`
 
 **Step 4: Commit**
 
 ```bash
-git add pymol-open-source/data/startup/matimac/tools/__init__.py \
-        pymol-open-source/data/startup/matimac/tools/base.py
+git add pymol-open-source/data/startup/molkit/tools/__init__.py \
+        pymol-open-source/data/startup/molkit/tools/base.py
 git commit -m "feat: add BaseTool ABC for viewport tools"
 ```
 
@@ -114,7 +114,7 @@ git commit -m "feat: add BaseTool ABC for viewport tools"
 ### Task 2: ToolManager with event filter
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/toolbar.py`
+- Create: `pymol-open-source/data/startup/molkit/toolbar.py`
 
 **Step 1: Create ToolManager class**
 
@@ -187,13 +187,13 @@ class ToolManager(QtCore.QObject):
 
 **Step 2: Verify**
 
-Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/matimac/toolbar.py').read()); print('OK')"`
+Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/molkit/toolbar.py').read()); print('OK')"`
 Expected: `OK`
 
 **Step 3: Commit**
 
 ```bash
-git add pymol-open-source/data/startup/matimac/toolbar.py
+git add pymol-open-source/data/startup/molkit/toolbar.py
 git commit -m "feat: add ToolManager with GL widget event filter"
 ```
 
@@ -202,7 +202,7 @@ git commit -m "feat: add ToolManager with GL widget event filter"
 ### Task 3: Toolbar overlay widget
 
 **Files:**
-- Modify: `pymol-open-source/data/startup/matimac/toolbar.py`
+- Modify: `pymol-open-source/data/startup/molkit/toolbar.py`
 
 **Step 1: Add ToolbarWidget class to toolbar.py**
 
@@ -340,13 +340,13 @@ In `ToolbarWidget.__init__`, after setting up the layout, add:
 
 **Step 3: Verify syntax**
 
-Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/matimac/toolbar.py').read()); print('OK')"`
+Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/molkit/toolbar.py').read()); print('OK')"`
 Expected: `OK`
 
 **Step 4: Commit**
 
 ```bash
-git add pymol-open-source/data/startup/matimac/toolbar.py
+git add pymol-open-source/data/startup/molkit/toolbar.py
 git commit -m "feat: add ToolbarWidget overlay for GL viewport"
 ```
 
@@ -355,7 +355,7 @@ git commit -m "feat: add ToolbarWidget overlay for GL viewport"
 ### Task 4: Select Tool - click mode
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/tools/select_tool.py`
+- Create: `pymol-open-source/data/startup/molkit/tools/select_tool.py`
 
 **Step 1: Create SelectTool with click mode**
 
@@ -367,7 +367,7 @@ from .base import BaseTool
 Qt = QtCore.Qt
 
 # Selection visualization object name
-_SEL_VIZ = "_matimac_sel_viz"
+_SEL_VIZ = "_molkit_sel_viz"
 
 
 class SelectTool(BaseTool):
@@ -767,14 +767,14 @@ from .select_tool import SelectTool
 
 **Step 3: Verify syntax**
 
-Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/matimac/tools/select_tool.py').read()); print('OK')"`
+Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/molkit/tools/select_tool.py').read()); print('OK')"`
 Expected: `OK`
 
 **Step 4: Commit**
 
 ```bash
-git add pymol-open-source/data/startup/matimac/tools/select_tool.py \
-        pymol-open-source/data/startup/matimac/tools/__init__.py
+git add pymol-open-source/data/startup/molkit/tools/select_tool.py \
+        pymol-open-source/data/startup/molkit/tools/__init__.py
 git commit -m "feat: add SelectTool with click/box/lasso modes and selection viz"
 ```
 
@@ -783,8 +783,8 @@ git commit -m "feat: add SelectTool with click/box/lasso modes and selection viz
 ### Task 5: Brush Tool
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/tools/brush_tool.py`
-- Modify: `pymol-open-source/data/startup/matimac/tools/__init__.py`
+- Create: `pymol-open-source/data/startup/molkit/tools/brush_tool.py`
+- Modify: `pymol-open-source/data/startup/molkit/tools/__init__.py`
 
 **Step 1: Create BrushTool**
 
@@ -967,14 +967,14 @@ from .brush_tool import BrushTool
 
 **Step 3: Verify syntax**
 
-Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/matimac/tools/brush_tool.py').read()); print('OK')"`
+Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/molkit/tools/brush_tool.py').read()); print('OK')"`
 Expected: `OK`
 
 **Step 4: Commit**
 
 ```bash
-git add pymol-open-source/data/startup/matimac/tools/brush_tool.py \
-        pymol-open-source/data/startup/matimac/tools/__init__.py
+git add pymol-open-source/data/startup/molkit/tools/brush_tool.py \
+        pymol-open-source/data/startup/molkit/tools/__init__.py
 git commit -m "feat: add BrushTool with atom/residue/chain paint modes"
 ```
 
@@ -983,8 +983,8 @@ git commit -m "feat: add BrushTool with atom/residue/chain paint modes"
 ### Task 6: Gizmo Tool (CGO camera orbit)
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/tools/gizmo_tool.py`
-- Modify: `pymol-open-source/data/startup/matimac/tools/__init__.py`
+- Create: `pymol-open-source/data/startup/molkit/tools/gizmo_tool.py`
+- Modify: `pymol-open-source/data/startup/molkit/tools/__init__.py`
 
 **Step 1: Create GizmoTool**
 
@@ -998,7 +998,7 @@ from .base import BaseTool
 
 Qt = QtCore.Qt
 
-_GIZMO_OBJ = "_matimac_gizmo"
+_GIZMO_OBJ = "_molkit_gizmo"
 _RING_SEGMENTS = 48
 _RING_RADIUS = 2.0
 _ARROW_LENGTH = 2.5
@@ -1179,14 +1179,14 @@ from .gizmo_tool import GizmoTool
 
 **Step 3: Verify syntax**
 
-Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/matimac/tools/gizmo_tool.py').read()); print('OK')"`
+Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/molkit/tools/gizmo_tool.py').read()); print('OK')"`
 Expected: `OK`
 
 **Step 4: Commit**
 
 ```bash
-git add pymol-open-source/data/startup/matimac/tools/gizmo_tool.py \
-        pymol-open-source/data/startup/matimac/tools/__init__.py
+git add pymol-open-source/data/startup/molkit/tools/gizmo_tool.py \
+        pymol-open-source/data/startup/molkit/tools/__init__.py
 git commit -m "feat: add GizmoTool with CGO rings/arrows for camera orbit"
 ```
 
@@ -1195,8 +1195,8 @@ git commit -m "feat: add GizmoTool with CGO rings/arrows for camera orbit"
 ### Task 7: Measure Tool
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/tools/measure_tool.py`
-- Modify: `pymol-open-source/data/startup/matimac/tools/__init__.py`
+- Create: `pymol-open-source/data/startup/molkit/tools/measure_tool.py`
+- Modify: `pymol-open-source/data/startup/molkit/tools/__init__.py`
 
 **Step 1: Create MeasureTool**
 
@@ -1207,7 +1207,7 @@ from .base import BaseTool
 
 Qt = QtCore.Qt
 
-_PICK_MARKER = "_matimac_pick_marker"
+_PICK_MARKER = "_molkit_pick_marker"
 
 
 class MeasureTool(BaseTool):
@@ -1422,14 +1422,14 @@ from .measure_tool import MeasureTool
 
 **Step 3: Verify syntax**
 
-Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/matimac/tools/measure_tool.py').read()); print('OK')"`
+Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/molkit/tools/measure_tool.py').read()); print('OK')"`
 Expected: `OK`
 
 **Step 4: Commit**
 
 ```bash
-git add pymol-open-source/data/startup/matimac/tools/measure_tool.py \
-        pymol-open-source/data/startup/matimac/tools/__init__.py
+git add pymol-open-source/data/startup/molkit/tools/measure_tool.py \
+        pymol-open-source/data/startup/molkit/tools/__init__.py
 git commit -m "feat: add MeasureTool with distance/angle/dihedral modes"
 ```
 
@@ -1438,8 +1438,8 @@ git commit -m "feat: add MeasureTool with distance/angle/dihedral modes"
 ### Task 8: Wire everything together in `__init__.py`
 
 **Files:**
-- Modify: `pymol-open-source/data/startup/matimac/__init__.py`
-- Modify: `pymol-open-source/data/startup/matimac/tools/__init__.py` (final exports)
+- Modify: `pymol-open-source/data/startup/molkit/__init__.py`
+- Modify: `pymol-open-source/data/startup/molkit/tools/__init__.py` (final exports)
 
 **Step 1: Finalize tools `__init__.py`**
 
@@ -1453,10 +1453,10 @@ from .measure_tool import MeasureTool
 
 **Step 2: Update `__init__.py` to create toolbar on startup**
 
-Modify `open_matimac()` in `__init__.py`:
+Modify `open_molkit()` in `__init__.py`:
 
 ```python
-def open_matimac():
+def open_molkit():
     from pymol.Qt import QtCore
     from pymol import cmd
 
@@ -1466,13 +1466,13 @@ def open_matimac():
     if window is None:
         return
 
-    if not hasattr(window, '_matimac_sidebar'):
-        from .sidebar import MatiMacSidebar
+    if not hasattr(window, '_molkit_sidebar'):
+        from .sidebar import MolKitSidebar
 
-        window._matimac_sidebar = MatiMacSidebar(window)
+        window._molkit_sidebar = MolKitSidebar(window)
         window.addDockWidget(
             Qt.DockWidgetArea.LeftDockWidgetArea,
-            window._matimac_sidebar,
+            window._molkit_sidebar,
         )
 
         # Hide the default external GUI (CLI)
@@ -1490,8 +1490,8 @@ def open_matimac():
         # --- Create toolbar ---
         _init_toolbar(window, cmd)
 
-    window._matimac_sidebar.show()
-    window._matimac_sidebar.raise_()
+    window._molkit_sidebar.show()
+    window._molkit_sidebar.raise_()
 
 
 def _init_toolbar(window, cmd):
@@ -1524,21 +1524,21 @@ def _init_toolbar(window, cmd):
     toolbar.show()
 
     # Store references
-    window._matimac_toolbar = toolbar
-    window._matimac_tool_manager = manager
+    window._molkit_toolbar = toolbar
+    window._molkit_tool_manager = manager
 ```
 
 **Step 3: Verify syntax**
 
-Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/matimac/__init__.py').read()); print('OK')"`
+Run: `python3 -c "import ast; ast.parse(open('pymol-open-source/data/startup/molkit/__init__.py').read()); print('OK')"`
 Expected: `OK`
 
 **Step 4: Commit**
 
 ```bash
-git add pymol-open-source/data/startup/matimac/__init__.py \
-        pymol-open-source/data/startup/matimac/tools/__init__.py
-git commit -m "feat: wire toolbar and tools into MatiMac plugin startup"
+git add pymol-open-source/data/startup/molkit/__init__.py \
+        pymol-open-source/data/startup/molkit/tools/__init__.py
+git commit -m "feat: wire toolbar and tools into MolKit plugin startup"
 ```
 
 ---
@@ -1547,7 +1547,7 @@ git commit -m "feat: wire toolbar and tools into MatiMac plugin startup"
 
 **Files:** None (testing only)
 
-**Step 1: Launch PyMOL with MatiMac**
+**Step 1: Launch PyMOL with MolKit**
 
 Run: `cd pymol-open-source && python setup.py install && pymol`
 
@@ -1557,7 +1557,7 @@ Run: `pymol`
 **Step 2: Verify toolbar appears**
 
 Expected:
-- MatiMac sidebar on the left (as before)
+- MolKit sidebar on the left (as before)
 - Vertical toolbar overlaid on the left edge of the 3D viewport
 - 4 tool buttons visible: ◎ (Select), 🖌 (Brush), ✥ (Gizmo), 📏 (Measure)
 

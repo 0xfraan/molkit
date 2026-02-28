@@ -1,4 +1,4 @@
-# MatiMac 3D Toolbar & Viewport Tools - Design
+# MolKit 3D Toolbar & Viewport Tools - Design
 
 ## Overview
 

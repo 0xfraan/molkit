@@ -1,10 +1,10 @@
-# MatiMac UI — Implementation Plan
+# MolKit UI — Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Build a PyMOL Qt plugin that adds a friendly sidebar UI — welcome screen, structure loader, view/color controls, and export — hiding the CLI by default.
 
-**Architecture:** PySide6 dockable sidebar plugin loaded from `data/startup/matimac/`. The plugin registers itself via `__init_plugin__()`, creates a `QDockWidget` on the left side of the PyMOL window, and hides the default external GUI (CLI/feedback). All PyMOL operations go through `pymol.cmd` API. The sidebar uses accordion-style collapsible sections (`QToolBox` or custom collapsible `QGroupBox`).
+**Architecture:** PySide6 dockable sidebar plugin loaded from `data/startup/molkit/`. The plugin registers itself via `__init_plugin__()`, creates a `QDockWidget` on the left side of the PyMOL window, and hides the default external GUI (CLI/feedback). All PyMOL operations go through `pymol.cmd` API. The sidebar uses accordion-style collapsible sections (`QToolBox` or custom collapsible `QGroupBox`).
 
 **Tech Stack:** Python 3.9+, PySide6 (via `pymol.Qt`), `pymol.cmd` API
 
@@ -21,54 +21,54 @@
 ### Task 1: Plugin Skeleton + Sidebar Shell
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/__init__.py`
-- Create: `pymol-open-source/data/startup/matimac/sidebar.py`
+- Create: `pymol-open-source/data/startup/molkit/__init__.py`
+- Create: `pymol-open-source/data/startup/molkit/sidebar.py`
 
 **Step 1: Create plugin directory**
 
 ```bash
-mkdir -p pymol-open-source/data/startup/matimac
+mkdir -p pymol-open-source/data/startup/molkit
 ```
 
 **Step 2: Write plugin entry point**
 
-Create `pymol-open-source/data/startup/matimac/__init__.py`:
+Create `pymol-open-source/data/startup/molkit/__init__.py`:
 
 ```python
 """
-MatiMac - Friendly PyMOL Interface
+MolKit - Friendly PyMOL Interface
 Version: 0.1.0
 """
 
 
 def __init_plugin__(app=None):
     from pymol import plugins
-    plugins.addmenuitemqt('MatiMac', open_matimac)
+    plugins.addmenuitemqt('MolKit', open_molkit)
 
 
-def open_matimac():
+def open_molkit():
     from pymol import plugins
-    from .sidebar import MatiMacSidebar
+    from .sidebar import MolKitSidebar
 
     app = plugins.get_pmgapp()
 
-    if not hasattr(app, '_matimac_sidebar'):
-        app._matimac_sidebar = MatiMacSidebar(app)
+    if not hasattr(app, '_molkit_sidebar'):
+        app._molkit_sidebar = MolKitSidebar(app)
         app.addDockWidget(
             __import__('pymol.Qt.QtCore', fromlist=['Qt']).Qt.DockWidgetArea.LeftDockWidgetArea,
-            app._matimac_sidebar,
+            app._molkit_sidebar,
         )
         # Hide the default external GUI (CLI)
         if hasattr(app, 'ext_window'):
             app.ext_window.hide()
 
-    app._matimac_sidebar.show()
-    app._matimac_sidebar.raise_()
+    app._molkit_sidebar.show()
+    app._molkit_sidebar.raise_()
 ```
 
 **Step 3: Write sidebar shell**
 
-Create `pymol-open-source/data/startup/matimac/sidebar.py`:
+Create `pymol-open-source/data/startup/molkit/sidebar.py`:
 
 ```python
 from pymol.Qt import QtWidgets, QtCore, QtGui
@@ -133,7 +133,7 @@ class CollapsibleSection(QtWidgets.QWidget):
         self.content_layout.addLayout(layout)
 
 
-class MatiMacSidebarWidget(QtWidgets.QWidget):
+class MolKitSidebarWidget(QtWidgets.QWidget):
     """Main sidebar widget with collapsible sections."""
 
     def __init__(self, parent=None, app=None):
@@ -169,14 +169,14 @@ class MatiMacSidebarWidget(QtWidgets.QWidget):
         self.main_layout.insertWidget(count - 1, section)
 
 
-class MatiMacSidebar(QtWidgets.QDockWidget):
+class MolKitSidebar(QtWidgets.QDockWidget):
     """Dockable sidebar wrapper."""
 
     def __init__(self, app, parent=None):
         super().__init__(parent or app)
-        self.setWindowTitle("MatiMac")
-        self.setObjectName("matimac_sidebar")
-        self.widget_inner = MatiMacSidebarWidget(self, app=app)
+        self.setWindowTitle("MolKit")
+        self.setObjectName("molkit_sidebar")
+        self.widget_inner = MolKitSidebarWidget(self, app=app)
         self.setWidget(self.widget_inner)
         self.setFeatures(
             QtWidgets.QDockWidget.DockWidgetFeature.DockWidgetMovable
@@ -186,21 +186,21 @@ class MatiMacSidebar(QtWidgets.QDockWidget):
 
 **Step 4: Test manually**
 
-Run PyMOL, open Plugin > MatiMac. Verify:
+Run PyMOL, open Plugin > MolKit. Verify:
 - Empty sidebar appears docked on the left
 - CLI/external GUI is hidden
 - Sidebar can be resized, moved, floated
 
 ```bash
 cd pymol-open-source && python -m pymol
-# Then: Plugin > MatiMac
+# Then: Plugin > MolKit
 ```
 
 **Step 5: Commit**
 
 ```bash
-git add data/startup/matimac/
-git commit -m "feat: matimac plugin skeleton with collapsible sidebar"
+git add data/startup/molkit/
+git commit -m "feat: molkit plugin skeleton with collapsible sidebar"
 ```
 
 ---
@@ -208,20 +208,20 @@ git commit -m "feat: matimac plugin skeleton with collapsible sidebar"
 ### Task 2: Welcome & Structure Loader Section
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/sections/___init__.py`
-- Create: `pymol-open-source/data/startup/matimac/sections/loader.py`
-- Modify: `pymol-open-source/data/startup/matimac/sidebar.py`
+- Create: `pymol-open-source/data/startup/molkit/sections/___init__.py`
+- Create: `pymol-open-source/data/startup/molkit/sections/loader.py`
+- Modify: `pymol-open-source/data/startup/molkit/sidebar.py`
 
 **Step 1: Create sections package**
 
 ```bash
-mkdir -p pymol-open-source/data/startup/matimac/sections
-touch pymol-open-source/data/startup/matimac/sections/__init__.py
+mkdir -p pymol-open-source/data/startup/molkit/sections
+touch pymol-open-source/data/startup/molkit/sections/__init__.py
 ```
 
 **Step 2: Write loader section**
 
-Create `pymol-open-source/data/startup/matimac/sections/loader.py`:
+Create `pymol-open-source/data/startup/molkit/sections/loader.py`:
 
 ```python
 import os
@@ -365,7 +365,7 @@ class LoaderSection(QtWidgets.QWidget):
 
 **Step 3: Wire loader into sidebar**
 
-Modify `pymol-open-source/data/startup/matimac/sidebar.py` — add to `MatiMacSidebarWidget.__init__()` after the stretch:
+Modify `pymol-open-source/data/startup/molkit/sidebar.py` — add to `MolKitSidebarWidget.__init__()` after the stretch:
 
 ```python
 # In __init__, before self.main_layout.addStretch():
@@ -420,7 +420,7 @@ def __init__(self, parent=None, app=None):
 
 ```bash
 cd pymol-open-source && python -m pymol
-# Plugin > MatiMac
+# Plugin > MolKit
 # Type "1ATP" → Fetch → should load and show cartoon
 # Click "Hemoglobina" → should load 1HHO
 # Click "Open file..." → file dialog should appear
@@ -429,7 +429,7 @@ cd pymol-open-source && python -m pymol
 **Step 5: Commit**
 
 ```bash
-git add data/startup/matimac/sections/
+git add data/startup/molkit/sections/
 git commit -m "feat: welcome & structure loader section"
 ```
 
@@ -438,12 +438,12 @@ git commit -m "feat: welcome & structure loader section"
 ### Task 3: Structure Manager Section (Object List)
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/sections/structure.py`
-- Modify: `pymol-open-source/data/startup/matimac/sidebar.py`
+- Create: `pymol-open-source/data/startup/molkit/sections/structure.py`
+- Modify: `pymol-open-source/data/startup/molkit/sidebar.py`
 
 **Step 1: Write structure manager**
 
-Create `pymol-open-source/data/startup/matimac/sections/structure.py`:
+Create `pymol-open-source/data/startup/molkit/sections/structure.py`:
 
 ```python
 from pymol.Qt import QtWidgets, QtCore, QtGui
@@ -555,7 +555,7 @@ class StructureSection(QtWidgets.QWidget):
 
 **Step 2: Wire into sidebar**
 
-Modify `pymol-open-source/data/startup/matimac/sidebar.py` — add after the loader section:
+Modify `pymol-open-source/data/startup/molkit/sidebar.py` — add after the loader section:
 
 ```python
 # After self.loader and separator, before self.main_layout.addStretch():
@@ -585,7 +585,7 @@ cd pymol-open-source && python -m pymol
 **Step 4: Commit**
 
 ```bash
-git add data/startup/matimac/sections/structure.py
+git add data/startup/molkit/sections/structure.py
 git commit -m "feat: structure manager section with object list"
 ```
 
@@ -594,12 +594,12 @@ git commit -m "feat: structure manager section with object list"
 ### Task 4: View Section (Representations & Presets)
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/sections/view.py`
-- Modify: `pymol-open-source/data/startup/matimac/sidebar.py`
+- Create: `pymol-open-source/data/startup/molkit/sections/view.py`
+- Modify: `pymol-open-source/data/startup/molkit/sidebar.py`
 
 **Step 1: Write view section**
 
-Create `pymol-open-source/data/startup/matimac/sections/view.py`:
+Create `pymol-open-source/data/startup/molkit/sections/view.py`:
 
 ```python
 from pymol.Qt import QtWidgets, QtCore
@@ -859,7 +859,7 @@ cd pymol-open-source && python -m pymol
 **Step 4: Commit**
 
 ```bash
-git add data/startup/matimac/sections/view.py
+git add data/startup/molkit/sections/view.py
 git commit -m "feat: view section with representations, toggles, and presets"
 ```
 
@@ -868,12 +868,12 @@ git commit -m "feat: view section with representations, toggles, and presets"
 ### Task 5: Colors Section
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/sections/colors.py`
-- Modify: `pymol-open-source/data/startup/matimac/sidebar.py`
+- Create: `pymol-open-source/data/startup/molkit/sections/colors.py`
+- Modify: `pymol-open-source/data/startup/molkit/sidebar.py`
 
 **Step 1: Write colors section**
 
-Create `pymol-open-source/data/startup/matimac/sections/colors.py`:
+Create `pymol-open-source/data/startup/molkit/sections/colors.py`:
 
 ```python
 from pymol.Qt import QtWidgets, QtCore, QtGui
@@ -1033,8 +1033,8 @@ class ColorsSection(QtWidgets.QWidget):
             b = color.blueF()
             target = self._get_target()
             try:
-                self.cmd.set_color("matimac_custom", [r, g, b])
-                self.cmd.color("matimac_custom", target)
+                self.cmd.set_color("molkit_custom", [r, g, b])
+                self.cmd.color("molkit_custom", target)
             except Exception as e:
                 print(f"Color error: {e}")
 ```
@@ -1066,7 +1066,7 @@ cd pymol-open-source && python -m pymol
 **Step 4: Commit**
 
 ```bash
-git add data/startup/matimac/sections/colors.py
+git add data/startup/molkit/sections/colors.py
 git commit -m "feat: colors section with schemes, palette, and custom picker"
 ```
 
@@ -1075,12 +1075,12 @@ git commit -m "feat: colors section with schemes, palette, and custom picker"
 ### Task 6: Selection Builder Section
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/sections/selection.py`
-- Modify: `pymol-open-source/data/startup/matimac/sidebar.py`
+- Create: `pymol-open-source/data/startup/molkit/sections/selection.py`
+- Modify: `pymol-open-source/data/startup/molkit/sidebar.py`
 
 **Step 1: Write selection builder**
 
-Create `pymol-open-source/data/startup/matimac/sections/selection.py`:
+Create `pymol-open-source/data/startup/molkit/sections/selection.py`:
 
 ```python
 from pymol.Qt import QtWidgets, QtCore
@@ -1302,7 +1302,7 @@ cd pymol-open-source && python -m pymol
 **Step 4: Commit**
 
 ```bash
-git add data/startup/matimac/sections/selection.py
+git add data/startup/molkit/sections/selection.py
 git commit -m "feat: visual selection builder with quick selects and chain/residue picker"
 ```
 
@@ -1311,12 +1311,12 @@ git commit -m "feat: visual selection builder with quick selects and chain/resid
 ### Task 7: Measurements Section
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/sections/measurements.py`
-- Modify: `pymol-open-source/data/startup/matimac/sidebar.py`
+- Create: `pymol-open-source/data/startup/molkit/sections/measurements.py`
+- Modify: `pymol-open-source/data/startup/molkit/sidebar.py`
 
 **Step 1: Write measurements section**
 
-Create `pymol-open-source/data/startup/matimac/sections/measurements.py`:
+Create `pymol-open-source/data/startup/molkit/sections/measurements.py`:
 
 ```python
 from pymol.Qt import QtWidgets, QtCore
@@ -1524,7 +1524,7 @@ cd pymol-open-source && python -m pymol
 **Step 4: Commit**
 
 ```bash
-git add data/startup/matimac/sections/measurements.py
+git add data/startup/molkit/sections/measurements.py
 git commit -m "feat: measurements section with H-bonds, polar contacts, distances"
 ```
 
@@ -1533,12 +1533,12 @@ git commit -m "feat: measurements section with H-bonds, polar contacts, distance
 ### Task 8: Export Section
 
 **Files:**
-- Create: `pymol-open-source/data/startup/matimac/sections/export.py`
-- Modify: `pymol-open-source/data/startup/matimac/sidebar.py`
+- Create: `pymol-open-source/data/startup/molkit/sections/export.py`
+- Modify: `pymol-open-source/data/startup/molkit/sidebar.py`
 
 **Step 1: Write export section**
 
-Create `pymol-open-source/data/startup/matimac/sections/export.py`:
+Create `pymol-open-source/data/startup/molkit/sections/export.py`:
 
 ```python
 import os
@@ -1734,7 +1734,7 @@ cd pymol-open-source && python -m pymol
 **Step 4: Commit**
 
 ```bash
-git add data/startup/matimac/sections/export.py
+git add data/startup/molkit/sections/export.py
 git commit -m "feat: export section with screenshot, ray-trace, session, and structure export"
 ```
 
@@ -1743,12 +1743,12 @@ git commit -m "feat: export section with screenshot, ray-trace, session, and str
 ### Task 9: Wire Everything Together + Auto-open on Startup
 
 **Files:**
-- Modify: `pymol-open-source/data/startup/matimac/__init__.py`
-- Modify: `pymol-open-source/data/startup/matimac/sidebar.py`
+- Modify: `pymol-open-source/data/startup/molkit/__init__.py`
+- Modify: `pymol-open-source/data/startup/molkit/sidebar.py`
 
 **Step 1: Finalize sidebar.py with all sections**
 
-The final `MatiMacSidebarWidget.__init__` should have all sections in order:
+The final `MolKitSidebarWidget.__init__` should have all sections in order:
 
 ```python
 def __init__(self, parent=None, app=None):
@@ -1853,11 +1853,11 @@ def _toggle_console(self):
 
 **Step 2: Update __init__.py for auto-open**
 
-Update `pymol-open-source/data/startup/matimac/__init__.py`:
+Update `pymol-open-source/data/startup/molkit/__init__.py`:
 
 ```python
 """
-MatiMac - Friendly PyMOL Interface
+MolKit - Friendly PyMOL Interface
 Version: 0.1.0
 """
 
@@ -1866,13 +1866,13 @@ from pymol.Qt import QtCore
 
 def __init_plugin__(app=None):
     from pymol import plugins
-    plugins.addmenuitemqt('MatiMac', open_matimac)
+    plugins.addmenuitemqt('MolKit', open_molkit)
 
     # Auto-open on startup (slight delay to let PyMOL finish init)
-    QtCore.QTimer.singleShot(500, open_matimac)
+    QtCore.QTimer.singleShot(500, open_molkit)
 
 
-def open_matimac():
+def open_molkit():
     from pymol import plugins
     from pymol.Qt import QtCore
 
@@ -1882,13 +1882,13 @@ def open_matimac():
     if app is None:
         return
 
-    if not hasattr(app, '_matimac_sidebar'):
-        from .sidebar import MatiMacSidebar
+    if not hasattr(app, '_molkit_sidebar'):
+        from .sidebar import MolKitSidebar
 
-        app._matimac_sidebar = MatiMacSidebar(app)
+        app._molkit_sidebar = MolKitSidebar(app)
         app.addDockWidget(
             Qt.DockWidgetArea.LeftDockWidgetArea,
-            app._matimac_sidebar,
+            app._molkit_sidebar,
         )
 
         # Hide the default external GUI (CLI)
@@ -1903,15 +1903,15 @@ def open_matimac():
         except Exception:
             pass
 
-    app._matimac_sidebar.show()
-    app._matimac_sidebar.raise_()
+    app._molkit_sidebar.show()
+    app._molkit_sidebar.raise_()
 ```
 
 **Step 3: Test full flow**
 
 ```bash
 cd pymol-open-source && python -m pymol
-# On startup: MatiMac sidebar should auto-appear on the left
+# On startup: MolKit sidebar should auto-appear on the left
 # CLI should be hidden
 # Full workflow:
 # 1. Type "1ATP" → Fetch → protein loads with nice defaults
@@ -1927,7 +1927,7 @@ cd pymol-open-source && python -m pymol
 **Step 4: Commit**
 
 ```bash
-git add data/startup/matimac/
+git add data/startup/molkit/
 git commit -m "feat: wire all sections together, auto-open on startup, hide CLI"
 ```
 
@@ -1960,6 +1960,6 @@ cd pymol-open-source && python -m pymol
 **Step 3: Commit final state**
 
 ```bash
-git add data/startup/matimac/
-git commit -m "chore: final testing and polish for matimac v0.1.0"
+git add data/startup/molkit/
+git commit -m "chore: final testing and polish for molkit v0.1.0"
 ```

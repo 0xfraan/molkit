@@ -1,4 +1,4 @@
-# MatiMac v0.2 — Search, Tabs, Inspector
+# MolKit v0.2 — Search, Tabs, Inspector
 
 ## Features
 
