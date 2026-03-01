@@ -23,11 +23,12 @@ class CollapsibleSection(QtWidgets.QWidget):
                 font-weight: bold;
                 font-size: 13px;
                 border: none;
-                border-bottom: 1px solid palette(mid);
-                background: palette(window);
+                border-bottom: 1px solid #3c3c3c;
+                background: #262626;
+                color: #d0d0d0;
             }
             QPushButton:hover {
-                background: palette(midlight);
+                background: #303030;
             }
         """)
         self.toggle_btn.clicked.connect(self._toggle)
