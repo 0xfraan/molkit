@@ -41,6 +41,12 @@ sudo apt install build-essential cmake libglew-dev libglm-dev freeglut3-dev \
   libpng-dev libfreetype-dev libxml2-dev libmsgpack-dev
 ```
 
+### Linux (pacman)
+
+```bash
+sudo pacman -S base-devel cmake glew glm freeglut libpng freetype2 libxml2 msgpack-cxx
+```
+
 ## Quick Start
 
 ```bash
