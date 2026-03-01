@@ -30,13 +30,6 @@ class ModelTabBar(QtWidgets.QWidget):
         self.tab_bar.tabCloseRequested.connect(self._on_tab_close)
         layout.addWidget(self.tab_bar, 1)
 
-        # Add button
-        add_btn = QtWidgets.QPushButton("+")
-        add_btn.setFixedSize(28, 28)
-        add_btn.setToolTip("Load another structure")
-        add_btn.clicked.connect(self.add_requested.emit)
-        layout.addWidget(add_btn)
-
         # Show All checkbox
         self.show_all_cb = QtWidgets.QCheckBox("Show all")
         self.show_all_cb.setToolTip("Overlay all models in viewport")

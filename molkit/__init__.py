@@ -114,7 +114,24 @@ def open_molkit():
     if window is None:
         return
 
+    # Give top corners to left/right docks so they extend full height
+    window.setCorner(Qt.Corner.TopLeftCorner, Qt.DockWidgetArea.LeftDockWidgetArea)
+    window.setCorner(Qt.Corner.TopRightCorner, Qt.DockWidgetArea.RightDockWidgetArea)
+
     if not hasattr(window, '_molkit_sidebar'):
+        # Tab bar as a top dock (squeezed between left/right panels)
+        from .tabs import ModelTabBar
+
+        tab_bar = ModelTabBar(cmd, window)
+        tab_dock = QtWidgets.QDockWidget("", window)
+        tab_dock.setObjectName("molkit_model_tabs")
+        tab_dock.setWidget(tab_bar)
+        tab_dock.setTitleBarWidget(QtWidgets.QWidget())  # hide title bar
+        tab_dock.setFeatures(QtWidgets.QDockWidget.DockWidgetFeature.NoDockWidgetFeatures)
+        window.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, tab_dock)
+        window._molkit_tab_bar = tab_bar
+
+        # Sidebar
         from .sidebar import MolKitSidebar
 
         window._molkit_sidebar = MolKitSidebar(window)
@@ -122,6 +139,9 @@ def open_molkit():
             Qt.DockWidgetArea.LeftDockWidgetArea,
             window._molkit_sidebar,
         )
+
+        # Connect sidebar to the tab bar
+        window._molkit_sidebar.widget_inner.set_tab_bar(tab_bar)
 
         # Inspector panel on the right
         from .inspector import InspectorDock

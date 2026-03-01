@@ -8,14 +8,14 @@ class CollapsibleSection(QtWidgets.QWidget):
 
     def __init__(self, title, parent=None):
         super().__init__(parent)
-        self._expanded = True
+        self._expanded = False
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
         # Header button
-        self.toggle_btn = QtWidgets.QPushButton(f"\u25bc {title}")
+        self.toggle_btn = QtWidgets.QPushButton(f"\u25b6 {title}")
         self.toggle_btn.setStyleSheet("""
             QPushButton {
                 text-align: left;
@@ -36,6 +36,7 @@ class CollapsibleSection(QtWidgets.QWidget):
 
         # Content area
         self.content = QtWidgets.QWidget()
+        self.content.setVisible(False)
         self.content_layout = QtWidgets.QVBoxLayout(self.content)
         self.content_layout.setContentsMargins(12, 8, 12, 8)
         self.content_layout.setSpacing(6)
@@ -83,20 +84,15 @@ class MolKitSidebarWidget(QtWidgets.QWidget):
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
 
-        # Model tabs
-        from .tabs import ModelTabBar
-        self.tab_bar = ModelTabBar(self.cmd, self)
-        self.main_layout.addWidget(self.tab_bar)
+        # Tab bar is set externally via set_tab_bar()
+        self.tab_bar = None
 
-        # Welcome / Loader (always visible at top)
+        # 1. Search / Load
         from .sections.loader import LoaderSection
+        self.loader_section = CollapsibleSection("Search / Load Structure")
         self.loader = LoaderSection(self.cmd, self)
-        self.main_layout.addWidget(self.loader)
-
-        # Separator
-        sep = QtWidgets.QFrame()
-        sep.setFrameShape(QtWidgets.QFrame.Shape.HLine)
-        self.main_layout.addWidget(sep)
+        self.loader_section.add_widget(self.loader)
+        self.main_layout.addWidget(self.loader_section)
 
         # 2. Structures
         from .sections.structure import StructureSection
@@ -135,7 +131,14 @@ class MolKitSidebarWidget(QtWidgets.QWidget):
         self.measurements_section.collapse()
         self.main_layout.addWidget(self.measurements_section)
 
-        # 7. Export
+        # 7. Scripts
+        from .sections.scripts import ScriptsSection
+        self.scripts_section = CollapsibleSection("Scripts (.pml)")
+        self.scripts_panel = ScriptsSection(self.cmd, self)
+        self.scripts_section.add_widget(self.scripts_panel)
+        self.main_layout.addWidget(self.scripts_section)
+
+        # 8. Export
         from .sections.export import ExportSection
         self.export_section = CollapsibleSection("Export")
         self.export_panel = ExportSection(self.cmd, self)
@@ -154,6 +157,18 @@ class MolKitSidebarWidget(QtWidgets.QWidget):
         self.console_section.collapse()
         self.main_layout.addWidget(self.console_section)
 
+        self.main_layout.addStretch()
+
+        scroll.setWidget(container)
+
+        outer = QtWidgets.QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(scroll)
+
+    def set_tab_bar(self, tab_bar):
+        """Connect an external tab bar to the sidebar signals."""
+        self.tab_bar = tab_bar
+
         # Connect loader -> add tab + refresh
         def _on_structure_loaded(name):
             self.tab_bar._save_current_view()
@@ -162,15 +177,10 @@ class MolKitSidebarWidget(QtWidgets.QWidget):
 
         self.loader.structure_loaded.connect(_on_structure_loaded)
 
-        # Connect tab [+] -> scroll to loader
-        self.tab_bar.add_requested.connect(
-            lambda: self.search_input_focus()
-        )
-
         # Connect tab close -> refresh structure list
         self.tab_bar.tab_closed.connect(lambda _: self.structure_manager.refresh())
 
-        # Connect tab change -> inspector (also fires on first load via add_tab)
+        # Connect tab change -> inspector
         def _on_tab_for_inspector(name):
             window = self.window
             if hasattr(window, '_molkit_inspector'):
@@ -182,14 +192,6 @@ class MolKitSidebarWidget(QtWidgets.QWidget):
         self._sync_timer = QtCore.QTimer(self)
         self._sync_timer.timeout.connect(self.tab_bar.sync_with_pymol)
         self._sync_timer.start(3000)
-
-        self.main_layout.addStretch()
-
-        scroll.setWidget(container)
-
-        outer = QtWidgets.QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.addWidget(scroll)
 
     def search_input_focus(self):
         """Scroll to top and focus the search input."""

@@ -7,15 +7,6 @@ from ..rcsb_client import search_pdb, fetch_batch_metadata, parse_entry_summary
 Qt = QtCore.Qt
 
 
-EXAMPLES = [
-    ("Hemoglobin", "1HHO", "Oxygen transport protein"),
-    ("Insulin", "4INS", "Hormone regulating blood sugar"),
-    ("GFP", "1GFL", "Green fluorescent protein"),
-    ("DNA double helix", "1BNA", "B-form DNA"),
-    ("Lysozyme", "1AKI", "Classic enzyme structure"),
-    ("ATP Synthase", "5ARA", "Molecular motor"),
-]
-
 
 class SearchWorker(QtCore.QThread):
     """Background thread for RCSB search + metadata fetch."""
@@ -155,35 +146,28 @@ class LoaderSection(QtWidgets.QWidget):
         self.results_container.setVisible(False)
         layout.addWidget(self.results_container)
 
+        # --- Fetch directory ---
+        fetch_dir_label = QtWidgets.QLabel("Save fetched structures to:")
+        fetch_dir_label.setStyleSheet("font-weight: bold;")
+        layout.addWidget(fetch_dir_label)
+
+        fetch_row = QtWidgets.QHBoxLayout()
+        self.fetch_dir_input = QtWidgets.QLineEdit()
+        self.fetch_dir_input.setPlaceholderText("Default (current directory)")
+        self.fetch_dir_input.setToolTip("Directory where fetched .cif files are saved")
+        fetch_row.addWidget(self.fetch_dir_input)
+
+        fetch_browse = QtWidgets.QPushButton("Browse")
+        fetch_browse.setFixedWidth(60)
+        fetch_browse.clicked.connect(self._browse_fetch_dir)
+        fetch_row.addWidget(fetch_browse)
+        layout.addLayout(fetch_row)
+
         # --- File Open ---
         file_btn = QtWidgets.QPushButton("Open file from disk...")
         file_btn.clicked.connect(self._open_file)
         layout.addWidget(file_btn)
 
-        # --- Separator ---
-        sep = QtWidgets.QFrame()
-        sep.setFrameShape(QtWidgets.QFrame.Shape.HLine)
-        sep.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
-        layout.addWidget(sep)
-
-        # --- Examples ---
-        self.examples_widget = QtWidgets.QWidget()
-        examples_layout = QtWidgets.QVBoxLayout(self.examples_widget)
-        examples_layout.setContentsMargins(0, 0, 0, 0)
-        examples_layout.setSpacing(4)
-
-        examples_label = QtWidgets.QLabel("Examples to explore:")
-        examples_label.setStyleSheet("font-weight: bold;")
-        examples_layout.addWidget(examples_label)
-
-        for name, pdb_id, desc in EXAMPLES:
-            btn = QtWidgets.QPushButton(f"{name}  ({pdb_id})")
-            btn.setToolTip(desc)
-            btn.setStyleSheet("text-align: left; padding: 4px 8px;")
-            btn.clicked.connect(lambda checked, pid=pdb_id: self._do_fetch(pid))
-            examples_layout.addWidget(btn)
-
-        layout.addWidget(self.examples_widget)
         layout.addStretch()
 
         # Debounce timer for search
@@ -237,7 +221,6 @@ class LoaderSection(QtWidgets.QWidget):
         self.status_label.setText(f"{len(summaries)} results:")
         self.status_label.setStyleSheet("color: gray; font-size: 11px;")
         self.results_container.setVisible(True)
-        self.examples_widget.setVisible(False)
 
         for s in summaries:
             card = SearchResultCard(s, self.results_container)
@@ -250,7 +233,14 @@ class LoaderSection(QtWidgets.QWidget):
             if item.widget():
                 item.widget().deleteLater()
         self.results_container.setVisible(False)
-        self.examples_widget.setVisible(True)
+
+    def _browse_fetch_dir(self):
+        d = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Select Fetch Directory",
+            self.fetch_dir_input.text() or os.path.expanduser("~"),
+        )
+        if d:
+            self.fetch_dir_input.setText(d)
 
     def _do_fetch(self, code):
         self.search_input.setText(code)
@@ -263,7 +253,11 @@ class LoaderSection(QtWidgets.QWidget):
             for obj in self.cmd.get_object_list():
                 self.cmd.disable(obj)
 
-            self.cmd.fetch(code, quiet=0)
+            fetch_path = self.fetch_dir_input.text().strip()
+            if fetch_path and os.path.isdir(fetch_path):
+                self.cmd.fetch(code, quiet=0, path=fetch_path)
+            else:
+                self.cmd.fetch(code, quiet=0)
             self.cmd.orient()
             self.cmd.hide("everything", code)
             self.cmd.show("cartoon", f"{code} and polymer")
