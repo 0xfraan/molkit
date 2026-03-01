@@ -2,6 +2,8 @@ import os
 
 from pymol.Qt import QtWidgets, QtCore
 
+from ..theme import status_style
+
 Qt = QtCore.Qt
 
 
@@ -54,7 +56,7 @@ class ScriptsSection(QtWidgets.QWidget):
         layout.addLayout(dir_row)
 
         self.status = QtWidgets.QLabel("")
-        self.status.setStyleSheet("color: gray; font-size: 11px;")
+        self.status.setStyleSheet(status_style("muted"))
         layout.addWidget(self.status)
 
         # Script list
@@ -85,7 +87,7 @@ class ScriptsSection(QtWidgets.QWidget):
         self._clear_list()
         if not os.path.isdir(path):
             self.status.setText("Directory not found.")
-            self.status.setStyleSheet("color: red; font-size: 11px;")
+            self.status.setStyleSheet(status_style("error"))
             return
 
         self._dir = path
@@ -95,11 +97,11 @@ class ScriptsSection(QtWidgets.QWidget):
 
         if not scripts:
             self.status.setText("No .pml files found.")
-            self.status.setStyleSheet("color: orange; font-size: 11px;")
+            self.status.setStyleSheet(status_style("warning"))
             return
 
         self.status.setText(f"{len(scripts)} script(s)")
-        self.status.setStyleSheet("color: gray; font-size: 11px;")
+        self.status.setStyleSheet(status_style("muted"))
 
         for name in scripts:
             filepath = os.path.join(path, name)
@@ -109,15 +111,15 @@ class ScriptsSection(QtWidgets.QWidget):
 
     def _run_script(self, filepath):
         self.status.setText(f"Running {os.path.basename(filepath)}...")
-        self.status.setStyleSheet("color: gray; font-size: 11px;")
+        self.status.setStyleSheet(status_style("muted"))
         QtWidgets.QApplication.processEvents()
         try:
             self.cmd.do(f"@{filepath}")
             self.status.setText(f"Done: {os.path.basename(filepath)}")
-            self.status.setStyleSheet("color: green; font-size: 11px;")
+            self.status.setStyleSheet(status_style("success"))
         except Exception as e:
             self.status.setText(f"Error: {e}")
-            self.status.setStyleSheet("color: red; font-size: 11px;")
+            self.status.setStyleSheet(status_style("error"))
 
     def _clear_list(self):
         while self.list_layout.count():

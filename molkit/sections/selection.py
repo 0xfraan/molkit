@@ -1,5 +1,7 @@
 from pymol.Qt import QtWidgets, QtCore
 
+from ..theme import FONT_SIZE_SM, TEXT_MUTED, status_style
+
 Qt = QtCore.Qt
 
 
@@ -33,7 +35,7 @@ class SelectionSection(QtWidgets.QWidget):
         ]
         for i, (label, sel_expr) in enumerate(quick_buttons):
             btn = QtWidgets.QPushButton(label)
-            btn.setStyleSheet("padding: 3px 6px; font-size: 11px;")
+            btn.setStyleSheet(f"padding: 3px 6px; font-size: {FONT_SIZE_SM};")
             btn.clicked.connect(
                 lambda checked, s=sel_expr, n=label: self._quick_select(s, n)
             )
@@ -92,7 +94,7 @@ class SelectionSection(QtWidgets.QWidget):
 
         # Status
         self.status = QtWidgets.QLabel("")
-        self.status.setStyleSheet("color: gray; font-size: 11px;")
+        self.status.setStyleSheet(status_style("muted"))
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
 
@@ -110,7 +112,7 @@ class SelectionSection(QtWidgets.QWidget):
         layout.addLayout(self.saved_list)
 
         self.no_sel_label = QtWidgets.QLabel(
-            "<i style='color:gray;'>No saved selections</i>"
+            f"<i style='color:{TEXT_MUTED};'>No saved selections</i>"
         )
         layout.addWidget(self.no_sel_label)
 
@@ -183,7 +185,7 @@ class SelectionSection(QtWidgets.QWidget):
             self.cmd.select("sele", expr)
             n = self.cmd.count_atoms("sele")
             self.status.setText(f"Selected {n} atoms\n({expr})")
-            self.status.setStyleSheet("color: green; font-size: 11px;")
+            self.status.setStyleSheet(status_style("success"))
         except Exception as e:
             self.status.setText(f"Error: {e}")
-            self.status.setStyleSheet("color: red; font-size: 11px;")
+            self.status.setStyleSheet(status_style("error"))

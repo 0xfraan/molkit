@@ -3,6 +3,11 @@ import webbrowser
 from pymol.Qt import QtWidgets, QtCore
 
 from .rcsb_client import fetch_entry_metadata
+from .theme import (
+    BG, SURFACE, HOVER, BORDER, TEXT, TEXT_MUTED, ACCENT,
+    FONT_SIZE_SM, FONT_SIZE_BASE, RADIUS, RADIUS_SM,
+    STATUS_WARNING, status_style,
+)
 
 Qt = QtCore.Qt
 
@@ -25,11 +30,11 @@ class InspectorWidget(QtWidgets.QWidget):
 
         container = QtWidgets.QWidget()
         self.main_layout = QtWidgets.QVBoxLayout(container)
-        self.main_layout.setContentsMargins(8, 8, 8, 8)
-        self.main_layout.setSpacing(4)
+        self.main_layout.setContentsMargins(12, 12, 12, 12)
+        self.main_layout.setSpacing(6)
 
         self.placeholder = QtWidgets.QLabel(
-            "<i style='color:gray;'>Load a structure to see details</i>"
+            f"<i style='color:{TEXT_MUTED};'>Load a structure to see details</i>"
         )
         self.placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(self.placeholder)
@@ -48,7 +53,7 @@ class InspectorWidget(QtWidgets.QWidget):
         # Check if this looks like a PDB code (4 chars alphanumeric)
         if len(pdb_id) == 4 and pdb_id.isalnum():
             loading = QtWidgets.QLabel(f"Loading info for {self._pdb_id}...")
-            loading.setStyleSheet("color: gray;")
+            loading.setStyleSheet(status_style("muted"))
             self._add(loading)
 
             self._worker = _FetchWorker(self._pdb_id, self)
@@ -60,7 +65,8 @@ class InspectorWidget(QtWidgets.QWidget):
 
     def _build_local_info(self, name):
         """Show basic info from PyMOL for file-loaded structures."""
-        header = QtWidgets.QLabel(f"<h3>{name}</h3>")
+        header = QtWidgets.QLabel(name)
+        header.setStyleSheet(f"font-size: 18px; font-weight: 700; color: {TEXT}; padding-bottom: 6px;")
         self._add(header)
 
         try:
@@ -78,9 +84,11 @@ class InspectorWidget(QtWidgets.QWidget):
         except Exception:
             pass
 
-        self._add(QtWidgets.QLabel(
-            "<i style='color:gray; font-size:10px;'>Detailed info available only for PDB structures</i>"
-        ))
+        self._add_separator()
+        note = QtWidgets.QLabel("Detailed info available only for PDB structures")
+        note.setWordWrap(True)
+        note.setStyleSheet(f"color: {TEXT_MUTED}; font-size: {FONT_SIZE_SM}; padding: 4px 0;")
+        self._add(note)
         self.main_layout.addStretch()
 
     def _clear(self):
@@ -89,34 +97,77 @@ class InspectorWidget(QtWidgets.QWidget):
             if item.widget():
                 item.widget().deleteLater()
 
+    @staticmethod
+    def _constrain(widget):
+        """Force widget to shrink to available width (prevents text overflow)."""
+        sp = widget.sizePolicy()
+        sp.setHorizontalPolicy(QtWidgets.QSizePolicy.Policy.Ignored)
+        widget.setSizePolicy(sp)
+        if isinstance(widget, QtWidgets.QLabel):
+            widget.setWordWrap(True)
+        return widget
+
     def _add(self, widget):
+        self._constrain(widget)
         self.main_layout.addWidget(widget)
 
     def _add_header(self, text):
-        label = QtWidgets.QLabel(f"<b>{text}</b>")
-        label.setStyleSheet("font-size: 13px; padding-top: 8px;")
+        label = QtWidgets.QLabel(text.lower())
+        label.setStyleSheet(f"""
+            font-size: {FONT_SIZE_BASE}; font-weight: 600;
+            color: {TEXT}; padding: 4px 0 2px 0;
+            border-left: 2px solid {ACCENT}; padding-left: 8px;
+        """)
         self._add(label)
 
     def _add_separator(self):
-        sep = QtWidgets.QFrame()
-        sep.setFrameShape(QtWidgets.QFrame.Shape.HLine)
-        sep.setStyleSheet("margin: 4px 0px;")
-        self._add(sep)
+        spacer = QtWidgets.QWidget()
+        spacer.setFixedHeight(8)
+        self._add(spacer)
 
     def _add_info_row(self, label, value):
-        row = QtWidgets.QLabel(f"<b>{label}:</b> {value}")
-        row.setWordWrap(True)
-        row.setStyleSheet("font-size: 11px;")
-        self._add(row)
+        row = QtWidgets.QHBoxLayout()
+        row.setContentsMargins(0, 2, 0, 2)
+        key = QtWidgets.QLabel(label)
+        key.setStyleSheet(f"font-size: {FONT_SIZE_SM}; color: {TEXT_MUTED};")
+        key.setFixedWidth(90)
+        val = QtWidgets.QLabel(value)
+        val.setWordWrap(True)
+        val.setStyleSheet(f"font-size: {FONT_SIZE_SM}; color: {TEXT};")
+        row.addWidget(key)
+        row.addWidget(val, 1)
+        w = QtWidgets.QWidget()
+        w.setLayout(row)
+        self._add(w)
 
     def _add_clickable(self, text, tooltip, callback):
-        btn = QtWidgets.QPushButton(text)
-        btn.setStyleSheet(
-            "text-align: left; padding: 3px 6px; font-size: 11px; border: 1px solid palette(mid); border-radius: 3px;"
-        )
-        btn.setToolTip(tooltip)
-        btn.clicked.connect(callback)
-        self._add(btn)
+        # Use a QLabel-based button so long text wraps instead of overflowing
+        label = QtWidgets.QLabel(text)
+        label.setWordWrap(True)
+        label.setStyleSheet(f"""
+            padding: 6px 10px;
+            font-size: {FONT_SIZE_SM}; border: 1px solid {BORDER};
+            border-radius: {RADIUS}; background: {SURFACE};
+        """)
+        label.setCursor(Qt.CursorShape.PointingHandCursor)
+        label.setToolTip(tooltip)
+        label.mousePressEvent = lambda e: callback(False)
+        self._add(label)
+
+    def _add_card(self, content_widget):
+        """Wrap a widget in a styled card container."""
+        card = QtWidgets.QFrame()
+        card.setStyleSheet(f"""
+            QFrame {{
+                border: 1px solid {BORDER}; border-radius: {RADIUS};
+                background: {SURFACE}; padding: 8px;
+            }}
+        """)
+        layout = QtWidgets.QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(4)
+        layout.addWidget(content_widget)
+        self._add(card)
 
     def _select_and_zoom(self, selection, zoom=True):
         try:
@@ -155,20 +206,21 @@ class InspectorWidget(QtWidgets.QWidget):
         title = (d.get("struct") or {}).get("title", "")
         pdb_id = d.get("rcsb_id", "")
 
-        header = QtWidgets.QLabel(f"<h3>{pdb_id}</h3>")
+        header = QtWidgets.QLabel(pdb_id)
+        header.setStyleSheet(f"font-size: 18px; font-weight: 700; color: {TEXT}; padding-bottom: 2px;")
         self._add(header)
 
         if title:
             t = QtWidgets.QLabel(title)
             t.setWordWrap(True)
-            t.setStyleSheet("font-size: 11px; color: palette(text);")
+            t.setStyleSheet(f"font-size: {FONT_SIZE_SM}; color: {TEXT_MUTED}; padding-bottom: 6px;")
             self._add(t)
 
         self._add_separator()
 
         method = exptl.get("method", "?")
         res = info.get("resolution_combined")
-        res_str = f"{res[0]:.2f} A" if res else "N/A"
+        res_str = f"{res[0]:.2f} \u00c5" if res else "N/A"
         self._add_info_row("Method", method)
         self._add_info_row("Resolution", res_str)
 
@@ -199,13 +251,27 @@ class InspectorWidget(QtWidgets.QWidget):
         if date:
             self._add_info_row("Deposited", date)
 
+        self._add_separator()
+
         # Link to RCSB
+        link_row = QtWidgets.QHBoxLayout()
+        link_row.setContentsMargins(0, 0, 0, 0)
+        link_row.addStretch()
         link_btn = QtWidgets.QPushButton(f"View on RCSB.org")
-        link_btn.setStyleSheet("font-size: 11px; padding: 3px;")
+        link_btn.setStyleSheet(f"""
+            font-size: {FONT_SIZE_SM}; padding: 6px 16px;
+            border: 1px solid {BORDER}; border-radius: {RADIUS};
+            background: {SURFACE};
+        """)
+        link_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         link_btn.clicked.connect(
             lambda: webbrowser.open(f"https://www.rcsb.org/structure/{pdb_id}")
         )
-        self._add(link_btn)
+        link_row.addWidget(link_btn)
+        link_row.addStretch()
+        link_w = QtWidgets.QWidget()
+        link_w.setLayout(link_row)
+        self._add(link_w)
 
     # -- Publications --
 
@@ -231,41 +297,67 @@ class InspectorWidget(QtWidgets.QWidget):
             else:
                 author_str = ", ".join(authors)
 
-            text = f"<b>{title[:100]}{'...' if len(title) > 100 else ''}</b>"
-            if author_str:
-                text += f"<br/><span style='font-size:10px;'>{author_str}</span>"
-            if journal or year:
-                text += f"<br/><span style='font-size:10px; color:gray;'>{journal} ({year})</span>"
+            # Card container
+            card = QtWidgets.QFrame()
+            card.setStyleSheet(f"""
+                QFrame {{
+                    border: 1px solid {BORDER}; border-radius: {RADIUS};
+                    background: {SURFACE};
+                }}
+            """)
+            card_layout = QtWidgets.QVBoxLayout(card)
+            card_layout.setContentsMargins(10, 8, 10, 8)
+            card_layout.setSpacing(4)
 
-            label = QtWidgets.QLabel(text)
-            label.setWordWrap(True)
-            label.setStyleSheet("font-size: 11px; padding: 4px; border: 1px solid palette(mid); border-radius: 3px; margin: 2px 0;")
-            self._add(label)
+            title_label = self._constrain(QtWidgets.QLabel(f"<b>{title[:120]}{'...' if len(title) > 120 else ''}</b>"))
+            title_label.setStyleSheet(f"font-size: {FONT_SIZE_SM}; border: none; background: transparent;")
+            card_layout.addWidget(title_label)
+
+            if author_str:
+                auth_label = self._constrain(QtWidgets.QLabel(author_str))
+                auth_label.setStyleSheet(f"font-size: {FONT_SIZE_SM}; color: {TEXT}; border: none; background: transparent;")
+                card_layout.addWidget(auth_label)
+
+            if journal or year:
+                meta_label = self._constrain(QtWidgets.QLabel(f"{journal} ({year})"))
+                meta_label.setStyleSheet(f"font-size: {FONT_SIZE_SM}; color: {TEXT_MUTED}; border: none; background: transparent;")
+                card_layout.addWidget(meta_label)
 
             # DOI / PubMed links
-            links = QtWidgets.QHBoxLayout()
-            if doi:
-                doi_btn = QtWidgets.QPushButton("DOI")
-                doi_btn.setFixedHeight(22)
-                doi_btn.setStyleSheet("font-size: 10px;")
-                doi_btn.clicked.connect(
-                    lambda checked, d=doi: webbrowser.open(f"https://doi.org/{d}")
-                )
-                links.addWidget(doi_btn)
-            if pubmed:
-                pm_btn = QtWidgets.QPushButton("PubMed")
-                pm_btn.setFixedHeight(22)
-                pm_btn.setStyleSheet("font-size: 10px;")
-                pm_btn.clicked.connect(
-                    lambda checked, p=pubmed: webbrowser.open(
-                        f"https://pubmed.ncbi.nlm.nih.gov/{p}/"
+            if doi or pubmed:
+                links = QtWidgets.QHBoxLayout()
+                links.setContentsMargins(0, 4, 0, 0)
+                links.setSpacing(6)
+                link_style = f"""
+                    font-size: {FONT_SIZE_SM}; padding: 3px 8px;
+                    border: 1px solid {BORDER}; border-radius: {RADIUS_SM};
+                    background: {BG};
+                """
+                if doi:
+                    doi_btn = QtWidgets.QPushButton("DOI")
+                    doi_btn.setStyleSheet(link_style)
+                    doi_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+                    doi_btn.clicked.connect(
+                        lambda checked, d=doi: webbrowser.open(f"https://doi.org/{d}")
                     )
-                )
-                links.addWidget(pm_btn)
-            links.addStretch()
-            links_w = QtWidgets.QWidget()
-            links_w.setLayout(links)
-            self._add(links_w)
+                    links.addWidget(doi_btn)
+                if pubmed:
+                    pm_btn = QtWidgets.QPushButton("PubMed")
+                    pm_btn.setStyleSheet(link_style)
+                    pm_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+                    pm_btn.clicked.connect(
+                        lambda checked, p=pubmed: webbrowser.open(
+                            f"https://pubmed.ncbi.nlm.nih.gov/{p}/"
+                        )
+                    )
+                    links.addWidget(pm_btn)
+                links.addStretch()
+                links_w = QtWidgets.QWidget()
+                links_w.setStyleSheet("border: none; background: transparent;")
+                links_w.setLayout(links)
+                card_layout.addWidget(links_w)
+
+            self._add(card)
 
     # -- Chains --
 
@@ -293,34 +385,61 @@ class InspectorWidget(QtWidgets.QWidget):
             # Info text
             parts = []
             if seq:
-                parts.append(f"{len(seq)} residues")
+                parts.append(f"{len(seq)} res")
             if weight:
                 parts.append(f"{weight:.1f} kDa")
             if org:
-                parts.append(f"<i>{org}</i>")
-            info = " | ".join(parts)
+                parts.append(org)
 
-            text = f"<b>Chain {chain_str}</b> - {desc}<br/><span style='font-size:10px;color:gray;'>{info}</span>"
-            label = QtWidgets.QLabel(text)
-            label.setWordWrap(True)
-            label.setStyleSheet("font-size: 11px;")
-            self._add(label)
+            # Card
+            card = QtWidgets.QFrame()
+            card.setStyleSheet(f"""
+                QFrame {{
+                    border: 1px solid {BORDER}; border-radius: {RADIUS};
+                    background: {SURFACE};
+                }}
+            """)
+            card_layout = QtWidgets.QVBoxLayout(card)
+            card_layout.setContentsMargins(10, 8, 10, 8)
+            card_layout.setSpacing(4)
 
-            # Buttons
+            chain_label = self._constrain(QtWidgets.QLabel(f"<b>Chain {chain_str}</b>"))
+            chain_label.setStyleSheet(f"font-size: {FONT_SIZE_SM}; border: none; background: transparent;")
+            card_layout.addWidget(chain_label)
+
+            desc_label = self._constrain(QtWidgets.QLabel(desc))
+            desc_label.setStyleSheet(f"font-size: {FONT_SIZE_SM}; color: {TEXT}; border: none; background: transparent;")
+            card_layout.addWidget(desc_label)
+
+            if parts:
+                meta = self._constrain(QtWidgets.QLabel(" \u00b7 ".join(parts)))
+                meta.setStyleSheet(f"font-size: {FONT_SIZE_SM}; color: {TEXT_MUTED}; border: none; background: transparent;")
+                card_layout.addWidget(meta)
+
+            # Select buttons
             btn_row = QtWidgets.QHBoxLayout()
+            btn_row.setContentsMargins(0, 4, 0, 0)
+            btn_row.setSpacing(6)
             for chain_id in chain_ids:
                 sel_expr = f"{self._pdb_id} and chain {chain_id}"
                 s_btn = QtWidgets.QPushButton(f"Select {chain_id}")
-                s_btn.setFixedHeight(22)
-                s_btn.setStyleSheet("font-size: 10px;")
+                s_btn.setStyleSheet(f"""
+                    font-size: {FONT_SIZE_SM}; padding: 3px 8px;
+                    border: 1px solid {BORDER}; border-radius: {RADIUS_SM};
+                    background: {BG};
+                """)
+                s_btn.setCursor(Qt.CursorShape.PointingHandCursor)
                 s_btn.clicked.connect(
                     lambda checked, s=sel_expr: self._select_and_zoom(s)
                 )
                 btn_row.addWidget(s_btn)
             btn_row.addStretch()
             btn_w = QtWidgets.QWidget()
+            btn_w.setStyleSheet("border: none; background: transparent;")
             btn_w.setLayout(btn_row)
-            self._add(btn_w)
+            card_layout.addWidget(btn_w)
+
+            self._add(card)
 
     # -- Domains & Motifs --
 
@@ -424,7 +543,8 @@ class InspectorWidget(QtWidgets.QWidget):
                 )
             else:
                 label = QtWidgets.QLabel(text)
-                label.setStyleSheet("font-size: 11px; padding: 2px;")
+                label.setWordWrap(True)
+                label.setStyleSheet(f"font-size: {FONT_SIZE_SM}; padding: 4px 0;")
                 self._add(label)
 
     # -- Ligands --
@@ -595,17 +715,17 @@ class InspectorWidget(QtWidgets.QWidget):
         ]:
             if not terms:
                 continue
-            cat_label = QtWidgets.QLabel(f"<b>{category}:</b>")
-            cat_label.setStyleSheet("font-size: 11px; padding-top: 4px;")
+            cat_label = QtWidgets.QLabel(category)
+            cat_label.setStyleSheet(f"font-size: {FONT_SIZE_SM}; font-weight: 600; color: {TEXT_MUTED}; padding: 6px 0 2px 0;")
             self._add(cat_label)
-            for term in terms[:8]:  # limit to avoid overwhelming
-                t = QtWidgets.QLabel(f"  - {term}")
-                t.setStyleSheet("font-size: 10px; color: palette(text);")
+            for term in terms[:8]:
+                t = QtWidgets.QLabel(f"\u2022  {term}")
+                t.setStyleSheet(f"font-size: {FONT_SIZE_SM}; color: {TEXT}; padding-left: 8px;")
                 t.setWordWrap(True)
                 self._add(t)
             if len(terms) > 8:
-                more = QtWidgets.QLabel(f"  <i>... and {len(terms) - 8} more</i>")
-                more.setStyleSheet("font-size: 10px; color: gray;")
+                more = QtWidgets.QLabel(f"    +{len(terms) - 8} more")
+                more.setStyleSheet(f"font-size: {FONT_SIZE_SM}; color: {TEXT_MUTED}; padding-left: 8px;")
                 self._add(more)
 
     # -- Quality --
@@ -633,7 +753,7 @@ class InspectorWidget(QtWidgets.QWidget):
 
         for issue in issues:
             label = QtWidgets.QLabel(issue)
-            label.setStyleSheet("font-size: 10px; color: orange;")
+            label.setStyleSheet(f"font-size: {FONT_SIZE_SM}; color: {STATUS_WARNING};")
             self._add(label)
 
 

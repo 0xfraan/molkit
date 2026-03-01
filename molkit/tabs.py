@@ -49,6 +49,10 @@ class ModelTabBar(QtWidgets.QWidget):
         idx = self.tab_bar.addTab(name)
         self.tab_bar.setTabData(idx, name)
         self.tab_bar.setCurrentIndex(idx)
+        # First tab: addTab already sets currentIndex to 0, so
+        # setCurrentIndex(0) is a no-op and currentChanged won't fire.
+        if self.tab_bar.count() == 1:
+            self.tab_changed.emit(name)
 
     def remove_tab(self, name: str):
         """Remove tab by object name."""

@@ -1,5 +1,7 @@
 from pymol.Qt import QtWidgets, QtCore, QtGui
 
+from ..theme import TEXT_MUTED, STATUS_ERROR
+
 Qt = QtCore.Qt
 
 
@@ -20,12 +22,12 @@ class ObjectRow(QtWidgets.QWidget):
         row.addWidget(self.vis_cb)
 
         info = self._get_info()
-        label = QtWidgets.QLabel(f"<b>{name}</b>  <span style='color:gray;'>{info}</span>")
+        label = QtWidgets.QLabel(f"<b>{name}</b>  <span style='color:{TEXT_MUTED};'>{info}</span>")
         row.addWidget(label, 1)
 
         del_btn = QtWidgets.QPushButton("x")
         del_btn.setFixedSize(20, 20)
-        del_btn.setStyleSheet("border: none; color: red; font-weight: bold;")
+        del_btn.setStyleSheet(f"border: none; color: {STATUS_ERROR}; font-weight: bold;")
         del_btn.setToolTip("Delete object")
         del_btn.clicked.connect(self._delete)
         row.addWidget(del_btn)
@@ -68,7 +70,7 @@ class StructureSection(QtWidgets.QWidget):
         layout.addLayout(self.list_layout)
 
         self.empty_label = QtWidgets.QLabel(
-            "<i style='color:gray;'>No structures loaded</i>"
+            f"<i style='color:{TEXT_MUTED};'>No structures loaded</i>"
         )
         self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.empty_label)

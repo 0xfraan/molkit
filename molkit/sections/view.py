@@ -1,6 +1,8 @@
 from pymol.Qt import QtWidgets, QtCore
 from pymol import cgo
 
+from ..theme import RADIUS
+
 Qt = QtCore.Qt
 
 GRID_OBJ_NAME = "_molkit_grid"
@@ -126,7 +128,7 @@ class ViewSection(QtWidgets.QWidget):
 
         for label, preset_id in PRESETS:
             btn = QtWidgets.QPushButton(label)
-            btn.setStyleSheet("text-align: left; padding: 4px 8px;")
+            btn.setStyleSheet(f"text-align: left; padding: 4px 8px; border-radius: {RADIUS};")
             btn.clicked.connect(lambda checked, pid=preset_id: self._apply_preset(pid))
             layout.addWidget(btn)
 

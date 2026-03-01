@@ -1,5 +1,7 @@
 from pymol.Qt import QtWidgets, QtCore, QtGui
 
+from ..theme import BORDER
+
 Qt = QtCore.Qt
 
 COLOR_SCHEMES = [
@@ -81,7 +83,7 @@ class ColorsSection(QtWidgets.QWidget):
                 rgb = self.cmd.get_color_tuple(color)
                 r, g, b = int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255)
                 btn.setStyleSheet(
-                    f"background-color: rgb({r},{g},{b}); border: 1px solid gray;"
+                    f"background-color: rgb({r},{g},{b}); border: 1px solid {BORDER};"
                 )
             except Exception:
                 btn.setText(name[:2])

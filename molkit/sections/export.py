@@ -2,6 +2,8 @@ import os
 
 from pymol.Qt import QtWidgets, QtCore
 
+from ..theme import status_style
+
 Qt = QtCore.Qt
 
 
@@ -50,7 +52,7 @@ class ExportSection(QtWidgets.QWidget):
         layout.addWidget(ray_btn)
 
         self.img_status = QtWidgets.QLabel("")
-        self.img_status.setStyleSheet("color: gray; font-size: 11px;")
+        self.img_status.setStyleSheet(status_style("muted"))
         self.img_status.setWordWrap(True)
         layout.addWidget(self.img_status)
 
@@ -104,10 +106,10 @@ class ExportSection(QtWidgets.QWidget):
             self.cmd.draw(w, h)
             self.cmd.png(fname, dpi=150)
             self.img_status.setText(f"Saved: {os.path.basename(fname)}")
-            self.img_status.setStyleSheet("color: green; font-size: 11px;")
+            self.img_status.setStyleSheet(status_style("success"))
         except Exception as e:
             self.img_status.setText(f"Error: {e}")
-            self.img_status.setStyleSheet("color: red; font-size: 11px;")
+            self.img_status.setStyleSheet(status_style("error"))
 
     def _ray_screenshot(self):
         fname = self._get_save_path(
@@ -126,10 +128,10 @@ class ExportSection(QtWidgets.QWidget):
             self.cmd.ray(w, h)
             self.cmd.png(fname, dpi=300)
             self.img_status.setText(f"Saved: {os.path.basename(fname)}")
-            self.img_status.setStyleSheet("color: green; font-size: 11px;")
+            self.img_status.setStyleSheet(status_style("success"))
         except Exception as e:
             self.img_status.setText(f"Error: {e}")
-            self.img_status.setStyleSheet("color: red; font-size: 11px;")
+            self.img_status.setStyleSheet(status_style("error"))
 
     def _save_session(self):
         fname = self._get_save_path(
@@ -142,10 +144,10 @@ class ExportSection(QtWidgets.QWidget):
         try:
             self.cmd.save(fname)
             self.img_status.setText(f"Session saved: {os.path.basename(fname)}")
-            self.img_status.setStyleSheet("color: green; font-size: 11px;")
+            self.img_status.setStyleSheet(status_style("success"))
         except Exception as e:
             self.img_status.setText(f"Error: {e}")
-            self.img_status.setStyleSheet("color: red; font-size: 11px;")
+            self.img_status.setStyleSheet(status_style("error"))
 
     def _export_structure(self):
         fname = self._get_save_path(
@@ -157,7 +159,7 @@ class ExportSection(QtWidgets.QWidget):
         try:
             self.cmd.save(fname, "all")
             self.img_status.setText(f"Exported: {os.path.basename(fname)}")
-            self.img_status.setStyleSheet("color: green; font-size: 11px;")
+            self.img_status.setStyleSheet(status_style("success"))
         except Exception as e:
             self.img_status.setText(f"Error: {e}")
-            self.img_status.setStyleSheet("color: red; font-size: 11px;")
+            self.img_status.setStyleSheet(status_style("error"))

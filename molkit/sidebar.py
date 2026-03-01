@@ -1,6 +1,15 @@
 from pymol.Qt import QtWidgets, QtCore, QtGui
 
+from .theme import (
+    BG, SURFACE, HOVER, BORDER, TEXT, TEXT_MUTED, ACCENT,
+    FONT_SIZE_BASE, FONT_SIZE_SM, RADIUS,
+)
+
 Qt = QtCore.Qt
+
+# Unicode chevrons (thin)
+_CHEVRON_RIGHT = "\u203a"   # ›
+_CHEVRON_DOWN = "\u2304"    # ⌄
 
 
 class CollapsibleSection(QtWidgets.QWidget):
@@ -15,22 +24,8 @@ class CollapsibleSection(QtWidgets.QWidget):
         layout.setSpacing(0)
 
         # Header button
-        self.toggle_btn = QtWidgets.QPushButton(f"\u25b6 {title}")
-        self.toggle_btn.setStyleSheet("""
-            QPushButton {
-                text-align: left;
-                padding: 8px 12px;
-                font-weight: bold;
-                font-size: 13px;
-                border: none;
-                border-bottom: 1px solid #3c3c3c;
-                background: #262626;
-                color: #d0d0d0;
-            }
-            QPushButton:hover {
-                background: #303030;
-            }
-        """)
+        self.toggle_btn = QtWidgets.QPushButton()
+        self.toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.toggle_btn.clicked.connect(self._toggle)
         layout.addWidget(self.toggle_btn)
 
@@ -38,22 +33,52 @@ class CollapsibleSection(QtWidgets.QWidget):
         self.content = QtWidgets.QWidget()
         self.content.setVisible(False)
         self.content_layout = QtWidgets.QVBoxLayout(self.content)
-        self.content_layout.setContentsMargins(12, 8, 12, 8)
-        self.content_layout.setSpacing(6)
+        self.content_layout.setContentsMargins(16, 8, 12, 12)
+        self.content_layout.setSpacing(8)
         layout.addWidget(self.content)
 
         self._title = title
+        self._apply_style()
+        self._update_label()
+
+    def _apply_style(self):
+        # Active sections get an accent left border
+        left_border = f"2px solid {ACCENT}" if self._expanded else f"2px solid transparent"
+        text_color = TEXT if self._expanded else TEXT_MUTED
+        self.toggle_btn.setStyleSheet(f"""
+            QPushButton {{
+                text-align: left;
+                padding: 10px 12px;
+                font-weight: 600;
+                font-size: {FONT_SIZE_BASE};
+                letter-spacing: 0.01em;
+                border: none;
+                border-left: {left_border};
+                background: transparent;
+                color: {text_color};
+            }}
+            QPushButton:hover {{
+                background: {HOVER};
+                border-radius: {RADIUS};
+                color: {TEXT};
+            }}
+        """)
+
+    def _update_label(self):
+        chevron = _CHEVRON_DOWN if self._expanded else _CHEVRON_RIGHT
+        self.toggle_btn.setText(f" {chevron}   {self._title}")
 
     def _toggle(self):
         self._expanded = not self._expanded
         self.content.setVisible(self._expanded)
-        arrow = "\u25bc" if self._expanded else "\u25b6"
-        self.toggle_btn.setText(f"{arrow} {self._title}")
+        self._apply_style()
+        self._update_label()
 
     def collapse(self):
         self._expanded = False
         self.content.setVisible(False)
-        self.toggle_btn.setText(f"\u25b6 {self._title}")
+        self._apply_style()
+        self._update_label()
 
     def add_widget(self, widget):
         self.content_layout.addWidget(widget)
@@ -81,43 +106,43 @@ class MolKitSidebarWidget(QtWidgets.QWidget):
 
         container = QtWidgets.QWidget()
         self.main_layout = QtWidgets.QVBoxLayout(container)
-        self.main_layout.setContentsMargins(0, 0, 0, 0)
-        self.main_layout.setSpacing(0)
+        self.main_layout.setContentsMargins(4, 4, 4, 4)
+        self.main_layout.setSpacing(2)
 
         # Tab bar is set externally via set_tab_bar()
         self.tab_bar = None
 
         # 1. Search / Load
         from .sections.loader import LoaderSection
-        self.loader_section = CollapsibleSection("Search / Load Structure")
+        self.loader_section = CollapsibleSection("search / load")
         self.loader = LoaderSection(self.cmd, self)
         self.loader_section.add_widget(self.loader)
         self.main_layout.addWidget(self.loader_section)
 
         # 2. Structures
         from .sections.structure import StructureSection
-        self.structure_section = CollapsibleSection("Structures")
+        self.structure_section = CollapsibleSection("structures")
         self.structure_manager = StructureSection(self.cmd, self)
         self.structure_section.add_widget(self.structure_manager)
         self.main_layout.addWidget(self.structure_section)
 
         # 3. View
         from .sections.view import ViewSection
-        self.view_section = CollapsibleSection("View")
+        self.view_section = CollapsibleSection("view")
         self.view_panel = ViewSection(self.cmd, self)
         self.view_section.add_widget(self.view_panel)
         self.main_layout.addWidget(self.view_section)
 
         # 4. Colors
         from .sections.colors import ColorsSection
-        self.colors_section = CollapsibleSection("Colors")
+        self.colors_section = CollapsibleSection("colors")
         self.colors_panel = ColorsSection(self.cmd, self)
         self.colors_section.add_widget(self.colors_panel)
         self.main_layout.addWidget(self.colors_section)
 
         # 5. Selection
         from .sections.selection import SelectionSection
-        self.selection_section = CollapsibleSection("Selection")
+        self.selection_section = CollapsibleSection("selection")
         self.selection_panel = SelectionSection(self.cmd, self)
         self.selection_section.add_widget(self.selection_panel)
         self.selection_section.collapse()
@@ -125,7 +150,7 @@ class MolKitSidebarWidget(QtWidgets.QWidget):
 
         # 6. Measurements
         from .sections.measurements import MeasurementsSection
-        self.measurements_section = CollapsibleSection("Measurements")
+        self.measurements_section = CollapsibleSection("measurements")
         self.measurements_panel = MeasurementsSection(self.cmd, self)
         self.measurements_section.add_widget(self.measurements_panel)
         self.measurements_section.collapse()
@@ -133,29 +158,18 @@ class MolKitSidebarWidget(QtWidgets.QWidget):
 
         # 7. Scripts
         from .sections.scripts import ScriptsSection
-        self.scripts_section = CollapsibleSection("Scripts (.pml)")
+        self.scripts_section = CollapsibleSection("scripts")
         self.scripts_panel = ScriptsSection(self.cmd, self)
         self.scripts_section.add_widget(self.scripts_panel)
         self.main_layout.addWidget(self.scripts_section)
 
         # 8. Export
         from .sections.export import ExportSection
-        self.export_section = CollapsibleSection("Export")
+        self.export_section = CollapsibleSection("export")
         self.export_panel = ExportSection(self.cmd, self)
         self.export_section.add_widget(self.export_panel)
         self.export_section.collapse()
         self.main_layout.addWidget(self.export_section)
-
-        # 8. Console toggle (hidden by default)
-        self.console_section = CollapsibleSection("Console (advanced)")
-        console_btn = QtWidgets.QPushButton("Show PyMOL Console")
-        console_btn.clicked.connect(self._toggle_console)
-        self.console_section.add_widget(console_btn)
-        inspector_btn = QtWidgets.QPushButton("Toggle Inspector Panel")
-        inspector_btn.clicked.connect(self._toggle_inspector)
-        self.console_section.add_widget(inspector_btn)
-        self.console_section.collapse()
-        self.main_layout.addWidget(self.console_section)
 
         self.main_layout.addStretch()
 
@@ -197,24 +211,6 @@ class MolKitSidebarWidget(QtWidgets.QWidget):
         """Scroll to top and focus the search input."""
         self.loader.search_input.setFocus()
         self.loader.search_input.selectAll()
-
-    def _toggle_console(self):
-        """Toggle the PyMOL external GUI (console)."""
-        if hasattr(self.window, 'ext_window'):
-            if self.window.ext_window.isVisible():
-                self.window.ext_window.hide()
-            else:
-                self.window.ext_window.show()
-
-    def _toggle_inspector(self):
-        """Toggle the inspector panel visibility."""
-        if hasattr(self.window, '_molkit_inspector'):
-            insp = self.window._molkit_inspector
-            if insp.isVisible():
-                insp.hide()
-            else:
-                insp.show()
-
 
 class MolKitSidebar(QtWidgets.QDockWidget):
     """Dockable sidebar wrapper."""

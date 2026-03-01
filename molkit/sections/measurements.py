@@ -1,5 +1,7 @@
 from pymol.Qt import QtWidgets, QtCore
 
+from ..theme import TEXT_MUTED, STATUS_ERROR, status_style
+
 Qt = QtCore.Qt
 
 
@@ -40,8 +42,8 @@ class MeasurementsSection(QtWidgets.QWidget):
         layout.addWidget(manual_label)
 
         info = QtWidgets.QLabel(
-            "<i style='color:gray;'>Click atoms in the viewport to pick them, "
-            "then click a button below.</i>"
+            f"<i style='color:{TEXT_MUTED};'>Click atoms in the viewport to pick them, "
+            f"then click a button below.</i>"
         )
         info.setWordWrap(True)
         layout.addWidget(info)
@@ -63,7 +65,7 @@ class MeasurementsSection(QtWidgets.QWidget):
 
         # Status
         self.status = QtWidgets.QLabel("")
-        self.status.setStyleSheet("color: gray; font-size: 11px;")
+        self.status.setStyleSheet(status_style("muted"))
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
 
@@ -73,7 +75,7 @@ class MeasurementsSection(QtWidgets.QWidget):
         layout.addWidget(sep2)
 
         clear_btn = QtWidgets.QPushButton("Clear All Measurements")
-        clear_btn.setStyleSheet("color: red;")
+        clear_btn.setStyleSheet(f"color: {STATUS_ERROR};")
         clear_btn.clicked.connect(self._clear_measurements)
         layout.addWidget(clear_btn)
 
@@ -98,10 +100,10 @@ class MeasurementsSection(QtWidgets.QWidget):
             self.cmd.set("dash_radius", 0.06, "hbonds")
 
             self.status.setText("H-bonds displayed (yellow dashes)")
-            self.status.setStyleSheet("color: green; font-size: 11px;")
+            self.status.setStyleSheet(status_style("success"))
         except Exception as e:
             self.status.setText(f"Error: {e}")
-            self.status.setStyleSheet("color: red; font-size: 11px;")
+            self.status.setStyleSheet(status_style("error"))
 
     def _show_polar_contacts(self):
         try:
@@ -115,10 +117,10 @@ class MeasurementsSection(QtWidgets.QWidget):
             self.cmd.set("dash_gap", 0.3, "polar_contacts")
             self.cmd.set("dash_radius", 0.05, "polar_contacts")
             self.status.setText("Polar contacts displayed (cyan dashes)")
-            self.status.setStyleSheet("color: green; font-size: 11px;")
+            self.status.setStyleSheet(status_style("success"))
         except Exception as e:
             self.status.setText(f"Error: {e}")
-            self.status.setStyleSheet("color: red; font-size: 11px;")
+            self.status.setStyleSheet(status_style("error"))
 
     def _measure_distance(self):
         self._measurement_count += 1
@@ -127,11 +129,11 @@ class MeasurementsSection(QtWidgets.QWidget):
             d = self.cmd.get_distance("pk1", "pk2")
             self.cmd.distance(name, "pk1", "pk2")
             self.status.setText(f"Distance: {d:.2f} A")
-            self.status.setStyleSheet("color: green; font-size: 11px;")
+            self.status.setStyleSheet(status_style("success"))
             self.cmd.unpick()
         except Exception:
             self.status.setText("Pick 2 atoms first (click on them in viewport)")
-            self.status.setStyleSheet("color: orange; font-size: 11px;")
+            self.status.setStyleSheet(status_style("warning"))
 
     def _measure_angle(self):
         self._measurement_count += 1
@@ -140,11 +142,11 @@ class MeasurementsSection(QtWidgets.QWidget):
             self.cmd.angle(name, "pk1", "pk2", "pk3")
             a = self.cmd.get_angle("pk1", "pk2", "pk3")
             self.status.setText(f"Angle: {a:.1f} deg")
-            self.status.setStyleSheet("color: green; font-size: 11px;")
+            self.status.setStyleSheet(status_style("success"))
             self.cmd.unpick()
         except Exception:
             self.status.setText("Pick 3 atoms first (click on them in viewport)")
-            self.status.setStyleSheet("color: orange; font-size: 11px;")
+            self.status.setStyleSheet(status_style("warning"))
 
     def _measure_dihedral(self):
         self._measurement_count += 1
@@ -153,11 +155,11 @@ class MeasurementsSection(QtWidgets.QWidget):
             self.cmd.dihedral(name, "pk1", "pk2", "pk3", "pk4")
             d = self.cmd.get_dihedral("pk1", "pk2", "pk3", "pk4")
             self.status.setText(f"Dihedral: {d:.1f} deg")
-            self.status.setStyleSheet("color: green; font-size: 11px;")
+            self.status.setStyleSheet(status_style("success"))
             self.cmd.unpick()
         except Exception:
             self.status.setText("Pick 4 atoms first (click on them in viewport)")
-            self.status.setStyleSheet("color: orange; font-size: 11px;")
+            self.status.setStyleSheet(status_style("warning"))
 
     def _clear_measurements(self):
         try:
@@ -169,6 +171,6 @@ class MeasurementsSection(QtWidgets.QWidget):
                 self.cmd.delete(f"dihe_{i}")
             self._measurement_count = 0
             self.status.setText("All measurements cleared")
-            self.status.setStyleSheet("color: gray; font-size: 11px;")
+            self.status.setStyleSheet(status_style("muted"))
         except Exception:
             pass

@@ -3,6 +3,9 @@ import os
 from pymol.Qt import QtWidgets, QtCore, QtGui
 
 from ..rcsb_client import search_pdb, fetch_batch_metadata, parse_entry_summary
+from ..theme import (
+    BORDER, HOVER, TEXT_MUTED, FONT_SIZE_SM, RADIUS, status_style,
+)
 
 Qt = QtCore.Qt
 
@@ -34,17 +37,17 @@ class SearchResultCard(QtWidgets.QFrame):
         super().__init__(parent)
         self.pdb_id = summary.get("pdb_id", "")
         self.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
-        self.setStyleSheet("""
-            SearchResultCard {
-                border: 1px solid palette(mid);
-                border-radius: 4px;
+        self.setStyleSheet(f"""
+            SearchResultCard {{
+                border: 1px solid {BORDER};
+                border-radius: {RADIUS};
                 padding: 6px;
                 margin: 2px 0px;
-            }
-            SearchResultCard:hover {
-                border-color: palette(highlight);
-                background: palette(midlight);
-            }
+            }}
+            SearchResultCard:hover {{
+                border-color: {TEXT_MUTED};
+                background: {HOVER};
+            }}
         """)
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -67,7 +70,7 @@ class SearchResultCard(QtWidgets.QFrame):
             meta_parts.append(f"{res:.1f} A")
         if meta_parts:
             meta = QtWidgets.QLabel(" | ".join(meta_parts))
-            meta.setStyleSheet("color: gray; font-size: 11px;")
+            meta.setStyleSheet(status_style("muted"))
             top.addWidget(meta)
 
         top.addStretch()
@@ -84,7 +87,7 @@ class SearchResultCard(QtWidgets.QFrame):
         if title:
             title_label = QtWidgets.QLabel(title[:120] + ("..." if len(title) > 120 else ""))
             title_label.setWordWrap(True)
-            title_label.setStyleSheet("font-size: 11px;")
+            title_label.setStyleSheet(f"font-size: {FONT_SIZE_SM};")
             layout.addWidget(title_label)
 
         # Organism + date
@@ -97,7 +100,7 @@ class SearchResultCard(QtWidgets.QFrame):
             bottom_parts.append(date[:4])
         if bottom_parts:
             bottom = QtWidgets.QLabel(" | ".join(bottom_parts))
-            bottom.setStyleSheet("color: gray; font-size: 10px;")
+            bottom.setStyleSheet(status_style("muted"))
             layout.addWidget(bottom)
 
 
@@ -134,7 +137,7 @@ class LoaderSection(QtWidgets.QWidget):
         layout.addLayout(search_row)
 
         self.status_label = QtWidgets.QLabel("")
-        self.status_label.setStyleSheet("color: gray; font-size: 11px;")
+        self.status_label.setStyleSheet(status_style("muted"))
         self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
 
@@ -204,7 +207,7 @@ class LoaderSection(QtWidgets.QWidget):
         if len(query) < 3:
             return
         self.status_label.setText(f"Searching '{query}'...")
-        self.status_label.setStyleSheet("color: gray; font-size: 11px;")
+        self.status_label.setStyleSheet(status_style("muted"))
         self._clear_results()
 
         self._worker = SearchWorker(query, self)
@@ -215,11 +218,11 @@ class LoaderSection(QtWidgets.QWidget):
         self._clear_results()
         if not summaries:
             self.status_label.setText("No results found.")
-            self.status_label.setStyleSheet("color: orange; font-size: 11px;")
+            self.status_label.setStyleSheet(status_style("warning"))
             return
 
         self.status_label.setText(f"{len(summaries)} results:")
-        self.status_label.setStyleSheet("color: gray; font-size: 11px;")
+        self.status_label.setStyleSheet(status_style("muted"))
         self.results_container.setVisible(True)
 
         for s in summaries:
@@ -245,7 +248,7 @@ class LoaderSection(QtWidgets.QWidget):
     def _do_fetch(self, code):
         self.search_input.setText(code)
         self.status_label.setText(f"Fetching {code}...")
-        self.status_label.setStyleSheet("color: gray; font-size: 11px;")
+        self.status_label.setStyleSheet(status_style("muted"))
         self._clear_results()
         QtWidgets.QApplication.processEvents()
         try:
@@ -271,11 +274,11 @@ class LoaderSection(QtWidgets.QWidget):
                 f"Loaded {code} "
                 f"({self.cmd.count_atoms(code)} atoms)"
             )
-            self.status_label.setStyleSheet("color: green; font-size: 11px;")
+            self.status_label.setStyleSheet(status_style("success"))
             self.structure_loaded.emit(code)
         except Exception as e:
             self.status_label.setText(f"Error: {e}")
-            self.status_label.setStyleSheet("color: red; font-size: 11px;")
+            self.status_label.setStyleSheet(status_style("error"))
 
     def _open_file(self):
         fname, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -297,8 +300,8 @@ class LoaderSection(QtWidgets.QWidget):
                 self.cmd.orient()
                 name = os.path.splitext(os.path.basename(fname))[0]
                 self.status_label.setText(f"Loaded {name}")
-                self.status_label.setStyleSheet("color: green; font-size: 11px;")
+                self.status_label.setStyleSheet(status_style("success"))
                 self.structure_loaded.emit(name)
             except Exception as e:
                 self.status_label.setText(f"Error: {e}")
-                self.status_label.setStyleSheet("color: red; font-size: 11px;")
+                self.status_label.setStyleSheet(status_style("error"))
